@@ -70,7 +70,7 @@ You can add new shortcuts by clicking the + button, choosing an icon and selecti
 
 <img src=".github/assets/settings.png" width="400" />
 
-Here you can adjust how the app behaves. You can choose if the GlanceThing desktop companion will automatically start with your computer, whether it will start minimized to the system tray, and whether it will attempt to automatically install GlanceThing to your CarThing once it's detected. You can also adjust some settings that will reflect in the GlanceThing client, for example brigtneas and date/time format.
+Here you can adjust how the app behaves. You can choose if the GlanceThing desktop companion will automatically start with your computer, whether it will start minimized to the system tray, and whether it will attempt to automatically install GlanceThing to your CarThing once it's detected. You can also adjust some settings that will reflect in the GlanceThing client, for example brightness and date/time format.
 
 ### Tray icon
 

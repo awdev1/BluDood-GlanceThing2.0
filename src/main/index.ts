@@ -68,6 +68,7 @@ import {
   removeScreensaverImage,
   hasCustomScreensaverImage
 } from './lib/screensaver.js'
+import { updateWeather } from './lib/weather'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -227,7 +228,7 @@ enum IPCHandler {
   UploadScreensaverImage = 'uploadScreensaverImage',
   RemoveScreensaverImage = 'removeScreensaverImage',
   HasCustomScreensaverImage = 'hasCustomScreensaverImage',
-  OpenDevTools = 'openDevTools'
+  UpdateWeather = 'updateWeather'
 }
 
 async function setupIpcHandlers() {
@@ -454,10 +455,8 @@ async function setupIpcHandlers() {
     return hasCustomScreensaverImage()
   })
 
-  ipcMain.handle(IPCHandler.OpenDevTools, () => {
-    if (mainWindow) {
-      mainWindow.webContents.openDevTools()
-    }
+  ipcMain.handle(IPCHandler.UpdateWeather, async () => {
+    return await updateWeather()
   })
 }
 

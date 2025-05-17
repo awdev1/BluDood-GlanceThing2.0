@@ -4,17 +4,17 @@ import EventEmitter from 'events'
 import { BasePlaybackHandler } from './BasePlaybackHandler.js'
 
 import spotify from './spotify.js'
-import native from './native.js'
-
+import spotifyfree from './spotifyfree.js'
 import {
   PlaybackData,
   PlaybackHandlerEvents,
-  RepeatMode
+  RepeatMode,
+  LyricsResponse
 } from '../../types/Playback.js'
 import { log } from '../utils.js'
 import { getPlaybackHandlerConfig, setStorageValue } from '../storage.js'
 
-const handlers: BasePlaybackHandler[] = [spotify, native]
+const handlers: BasePlaybackHandler[] = [spotify,spotifyfree]
 
 class PlaybackManager extends (EventEmitter as new () => TypedEmitter<PlaybackHandlerEvents>) {
   private currentHandler: BasePlaybackHandler | null = null
@@ -33,11 +33,8 @@ class PlaybackManager extends (EventEmitter as new () => TypedEmitter<PlaybackHa
 
     const handler = this.getHandler(handlerName)
     const config = await getPlaybackHandlerConfig(handlerName)
-    if (!handler.validateConfig(config)) {
-      this.emit(
-        'error',
-        new Error(`Invalid config for handler ${handlerName}`)
-      )
+    if (!config) {
+      this.emit('error', new Error('No config found for handler'))
       return setStorageValue('playbackHandler', 'none')
     }
 
@@ -111,6 +108,11 @@ class PlaybackManager extends (EventEmitter as new () => TypedEmitter<PlaybackHa
   async getImage(): Promise<Buffer | null> {
     if (!this.currentHandler) return null
     return this.currentHandler.getImage()
+  }
+
+  async getLyrics(): Promise<LyricsResponse | null> {
+    if (!this.currentHandler) return null
+    return this.currentHandler.getLyrics()
   }
 }
 

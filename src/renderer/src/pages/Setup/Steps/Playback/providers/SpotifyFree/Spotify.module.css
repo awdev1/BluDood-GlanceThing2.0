@@ -66,6 +66,7 @@
   flex-direction: column;
   gap: 10px;
   margin-top: 5px;
+  margin-bottom: 1rem; /* Added for spacing */
   width: 100%;
 }
 
@@ -83,10 +84,14 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin: 30px auto;
-  gap: 10px;
-  animation: appear 500ms ease;
+  justify-content: center;
+  min-height: 60px; /* Ensures layout doesn't shift */
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  text-align: center;
+  width: 100%;
 }
+
 
 .state span {
   font-size: 4rem;
@@ -116,15 +121,13 @@
 }
 
 .buttons {
-  flex: 1;
   display: flex;
   justify-content: flex-end;
-  align-items: flex-end;
   width: 100%;
+  margin-top: auto; /* Ensures it sticks to the bottom */
 }
 
 .buttons button {
-  margin: 0 10px;
   animation: appearH 500ms ease;
 }
 

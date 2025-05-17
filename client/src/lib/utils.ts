@@ -30,3 +30,30 @@ export function formatTime(ms: number) {
 
   return `${remainingMinutes}:${remainingSeconds.toString().padStart(2, '0')}`
 }
+
+export const debouncedFunction = <T extends (...args: any[]) => void>(
+  callback: T,
+  delay: number
+) => {
+  let timeoutId: number | null = null
+
+  const debouncedFn = (...args: Parameters<T>) => {
+    if (timeoutId !== null) {
+      window.clearTimeout(timeoutId)
+    }
+
+    timeoutId = window.setTimeout(() => {
+      callback(...args)
+      timeoutId = null
+    }, delay)
+  }
+
+  debouncedFn.cancel = () => {
+    if (timeoutId !== null) {
+      window.clearTimeout(timeoutId)
+      timeoutId = null
+    }
+  }
+
+  return debouncedFn
+}

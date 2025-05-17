@@ -32,11 +32,12 @@ export const actions: HandlerAction[] = [
     action: 'image',
     handle: async ws => {
       const image = await playbackManager.getImage()
+      if (!image) return
       ws.send(
         JSON.stringify({
           type: 'playback',
           action: 'image',
-          data: image ? image.toString('base64') : null
+          data: image.toString('base64')
         })
       )
     }
@@ -63,6 +64,20 @@ export const actions: HandlerAction[] = [
     action: 'repeat',
     handle: async (_, data) => {
       await playbackManager.repeat((data as { state: RepeatMode }).state)
+    }
+  },
+  {
+    action: 'lyrics',
+    handle: async ws => {
+      const lyrics = await playbackManager.getLyrics()
+      if (!lyrics) return
+      ws.send(
+        JSON.stringify({
+          type: 'playback',
+          action: 'lyrics',
+          data: lyrics
+        })
+      )
     }
   }
 ]

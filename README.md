@@ -7,9 +7,8 @@ Your CarThing as a glanceable action pad!
 ## Features
 
 - Desktop companion app with a guided installer
-
 - Status bar with date and time
-- Spotify controls (play/pause, volume)
+- Spotify controls (play/pause, volume, next/previous, shuffle, repeat) with support for Spotify Free and Premium accounts, featuring synchronized lyrics for supported tracks.
 - Customizable shortcuts to apps
 - Command actions (will be customizable in the future)
 
@@ -41,6 +40,7 @@ Using the dial will:
 
   - Click: Play/Pause playback.
   - Scroll: Adjust volume on the playing device
+  - Double Tap: Skips the current track
 
 - **Shortcuts / Actions**:
   - Click: Execute highlighted action.

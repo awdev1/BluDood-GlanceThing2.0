@@ -4,8 +4,7 @@ import TypedEmitter from 'typed-emitter'
 import {
   PlaybackData,
   PlaybackHandlerEvents,
-  RepeatMode,
-  LyricsResponse
+  RepeatMode
 } from '../../types/Playback.js'
 
 export abstract class BasePlaybackHandler extends (EventEmitter as new () => TypedEmitter<PlaybackHandlerEvents>) {
@@ -23,5 +22,4 @@ export abstract class BasePlaybackHandler extends (EventEmitter as new () => Typ
   abstract shuffle(state: boolean): Promise<void>
   abstract repeat(stae: RepeatMode): Promise<void>
   abstract getImage(): Promise<Buffer | null>
-  abstract getLyrics(): Promise<LyricsResponse | null>
 }

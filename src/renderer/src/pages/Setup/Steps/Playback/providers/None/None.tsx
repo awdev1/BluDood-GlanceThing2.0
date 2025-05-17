@@ -6,13 +6,12 @@ interface NoneProps {
 }
 
 const None: React.FC<NoneProps> = ({ onStepComplete }) => {
-  useEffect(() => {
-    onStepComplete()
-  }, [])
-
   return (
     <div className={styles.none}>
       <p>This will simply disable media feedback on GlanceThing.</p>
+      <div className={styles.buttons}>
+        <button onClick={onStepComplete}>Continue</button>
+      </div>
     </div>
   )
 }

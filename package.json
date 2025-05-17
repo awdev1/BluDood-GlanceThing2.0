@@ -53,5 +53,9 @@
     "typed-emitter": "^2.1.0",
     "typescript": "^5.8.3",
     "vite": "^6.3.5"
+  },
+  "optionalDependencies": {
+    "node-nowplaying-win32-x64-msvc": "0.1.0",
+    "node-nowplaying-darwin-universal": "0.1.0"
   }
 }

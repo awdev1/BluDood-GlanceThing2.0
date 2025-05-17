@@ -52,11 +52,10 @@
   border: 2px solid transparent;
   transition: border-color 200ms ease;
 }
-
 .buttons button:disabled span {
   border: none;
 }
 
 .buttons button[data-selected='true'] span {
-  border-color: var(--color-primary);
+  border-color: #0064ff;
 }

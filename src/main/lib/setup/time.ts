@@ -1,12 +1,31 @@
 import cron from 'node-cron'
 
+import { wss } from '../server.js'
+
+import { AuthenticatedWebSocket } from '../../types/WebSocketServer.js'
 import { SetupFunction } from '../../types/WebSocketSetup.js'
-import { updateTime } from '../time.js'
+import { formatDate } from '../time.js'
 
 export const name = 'time'
 
 export const setup: SetupFunction = async () => {
-  // Set up a cron job to update time every minute
+  async function updateTime() {
+    if (!wss) return
+
+    wss.clients.forEach(async (ws: AuthenticatedWebSocket) => {
+      if (!ws.authenticated) return
+
+      if (ws.readyState === 1) {
+        ws.send(
+          JSON.stringify({
+            type: 'time',
+            data: formatDate()
+          })
+        )
+      }
+    })
+  }
+
   const timeJob = cron.schedule('* * * * *', updateTime)
 
   return async () => {

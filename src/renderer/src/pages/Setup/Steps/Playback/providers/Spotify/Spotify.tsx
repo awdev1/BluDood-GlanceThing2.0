@@ -34,9 +34,6 @@ const Spotify: React.FC<SpotifyProps> = ({ onStepComplete }) => {
             setStep(SpotifyStep.Token)
             credentialsRef.current = data
           }}
-          onStepSkip={() => {
-            setStep(SpotifyStep.Token)
-          }}
         />
       ) : step === SpotifyStep.Token ? (
         <TokenSetup
@@ -48,9 +45,6 @@ const Spotify: React.FC<SpotifyProps> = ({ onStepComplete }) => {
               })
               onStepComplete()
             }
-          }}
-          onStepSkip={() => {
-            onStepComplete()
           }}
         />
       ) : null}
@@ -73,7 +67,6 @@ interface SpotifyAPISetupProps {
     clientSecret: string
     refreshToken: string
   }) => void
-  onStepSkip: () => void
 }
 
 enum SpotifyAPISetupState {
@@ -85,8 +78,7 @@ enum SpotifyAPISetupState {
 }
 
 const SpotifyAPISetup: React.FC<SpotifyAPISetupProps> = ({
-  onStepComplete,
-  onStepSkip
+  onStepComplete
 }) => {
   const [state, setState] = useState<SpotifyAPISetupState>(0)
   const [error, setError] = useState<string>('')
@@ -119,10 +111,6 @@ const SpotifyAPISetup: React.FC<SpotifyAPISetupProps> = ({
     const clientSecret = secretRef.current!.value
     const refreshToken = tokenRef.current!.value
     onStepComplete({ clientId, clientSecret, refreshToken })
-  }
-
-  function skip() {
-    onStepSkip()
   }
 
   return (
@@ -196,7 +184,6 @@ const SpotifyAPISetup: React.FC<SpotifyAPISetupProps> = ({
         </div>
       ) : null}
       <div className={styles.buttons}>
-        <button onClick={skip}>Skip</button>
         {[
           SpotifyAPISetupState.Pending,
           SpotifyAPISetupState.Error,
@@ -213,7 +200,6 @@ const SpotifyAPISetup: React.FC<SpotifyAPISetupProps> = ({
 
 interface TokenSetupProps {
   onStepComplete: (data: { sp_dc: string }) => void
-  onStepSkip: () => void
 }
 
 enum TokenSetupState {
@@ -224,10 +210,7 @@ enum TokenSetupState {
   Error
 }
 
-const TokenSetup: React.FC<TokenSetupProps> = ({
-  onStepComplete,
-  onStepSkip
-}) => {
+const TokenSetup: React.FC<TokenSetupProps> = ({ onStepComplete }) => {
   const [state, setState] = useState<TokenSetupState>(0)
   const [error, setError] = useState<string>('')
   const inputRef = useRef<HTMLInputElement | null>(null)
@@ -252,10 +235,6 @@ const TokenSetup: React.FC<TokenSetupProps> = ({
   function complete() {
     const token = inputRef.current!.value
     onStepComplete({ sp_dc: token })
-  }
-
-  function skip() {
-    onStepSkip()
   }
 
   function validate(token: string) {
@@ -335,7 +314,6 @@ const TokenSetup: React.FC<TokenSetupProps> = ({
         </div>
       ) : null}
       <div className={styles.buttons}>
-        <button onClick={skip}>Skip</button>
         {[
           TokenSetupState.Pending,
           TokenSetupState.Error,

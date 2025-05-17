@@ -184,7 +184,7 @@
 
 .volume .slider .fill {
   height: 100%;
-  background: var(--color-primary);
+  background: #0064ff;
   transition: width 200ms ease;
 }
 

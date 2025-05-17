@@ -9,18 +9,14 @@ export function formatDate(d = new Date()) {
 
   const time = moment(d).format(timeFormat)
   const date = moment(d).format(dateFormat)
-  const dateTime = moment(d).format('YYYY-MM-DD HH:mm:ss')
 
   return {
     time,
-    date,
-    dateTime,
-    timeFormat,
-    dateFormat
+    date
   }
 }
 
-export async function updateTime(): Promise<void> {
+export async function updateTime() {
   if (!wss) return
 
   wss.clients.forEach(async (ws: AuthenticatedWebSocket) => {

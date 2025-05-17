@@ -81,7 +81,7 @@ const SocketContextProvider = ({
       }
     }
 
-    const handleSocketMessage = (e: MessageEvent) => {
+    const listener = (e: MessageEvent) => {
       const { type } = JSON.parse(e.data)
       if (type !== 'pong') return
 
@@ -89,13 +89,13 @@ const SocketContextProvider = ({
       missedPongsRef.current = 0
     }
 
-    ws.current!.addEventListener('message', handleSocketMessage)
+    ws.current!.addEventListener('message', listener)
     const interval = setInterval(sendPing, 5000)
 
     return () => {
       clearInterval(interval)
       if (timeoutRef.current) clearTimeout(timeoutRef.current)
-      ws.current!.removeEventListener('message', handleSocketMessage)
+      ws.current!.removeEventListener('message', listener)
     }
   }, [ready])
 

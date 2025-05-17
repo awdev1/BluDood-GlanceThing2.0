@@ -7,11 +7,7 @@ import { SocketContext } from '@/contexts/SocketContext.tsx'
 
 import styles from './Controls.module.css'
 
-interface ControlsProps {
-  visible?: boolean
-}
-
-const Controls: React.FC<ControlsProps> = ({ visible }) => {
+const Controls: React.FC = () => {
   const { socket } = useContext(SocketContext)
 
   const controlsRef = useRef<HTMLDivElement>(null)
@@ -60,7 +56,7 @@ const Controls: React.FC<ControlsProps> = ({ visible }) => {
   }
 
   useEffect(() => {
-    const handleWheelEvent = (e: globalThis.WheelEvent) => {
+    const listener = (e: globalThis.WheelEvent) => {
       if (controlsRef.current?.querySelector(':focus-within')) {
         e.preventDefault()
         onWheel({
@@ -69,12 +65,12 @@ const Controls: React.FC<ControlsProps> = ({ visible }) => {
       }
     }
 
-    document.addEventListener('wheel', handleWheelEvent, {
+    document.addEventListener('wheel', listener, {
       passive: false
     })
 
     return () => {
-      document.removeEventListener('wheel', handleWheelEvent)
+      document.removeEventListener('wheel', listener)
     }
   }, [])
 
@@ -84,7 +80,6 @@ const Controls: React.FC<ControlsProps> = ({ visible }) => {
       onKeyDown={onKeyDown}
       onFocus={onFocus}
       ref={controlsRef}
-      visible={visible}
     >
       <div
         className={styles.control}

@@ -62,7 +62,7 @@ declare global {
       }>
       removeScreensaverImage: () => Promise<boolean>
       hasCustomScreensaverImage: () => Promise<boolean>
-      updateWeather: () => Promise<boolean>
+      openDevTools: () => void
     }
   }
 }

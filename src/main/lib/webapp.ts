@@ -34,7 +34,7 @@ export async function getWebAppDir() {
   if (fs.existsSync(extractPath))
     fs.rmSync(extractPath, { recursive: true })
 
-  const url = `https://github.com/BluDood/GlanceThing/releases/download/v${version}/glancething-client-v${version}.zip`
+  const url = `https://github.com/awdev1/BluDood-GlanceThing2.0/releases/download/v${version}/glancething-client-v${version}.zip`
 
   const res = await axios.get(url, {
     responseType: 'stream',

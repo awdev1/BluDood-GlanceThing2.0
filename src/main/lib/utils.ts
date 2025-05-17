@@ -178,3 +178,19 @@ export function getPlatformTar() {
       return 'tar'
   }
 }
+
+export function intToRgb(colorInt: number): {
+  r: number
+  g: number
+  b: number
+} {
+  if (colorInt < 0) {
+    colorInt = 0xffffffff + colorInt + 1
+  }
+
+  const r = (colorInt >> 16) & 0xff
+  const g = (colorInt >> 8) & 0xff
+  const b = colorInt & 0xff
+
+  return { r, g, b }
+}

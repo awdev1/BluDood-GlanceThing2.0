@@ -1,0 +1,46 @@
+name: Sync Upstream with PR
+
+on:
+  schedule:
+    - cron: '0 6 * * *'  # Every day at 6 AM UTC
+  workflow_dispatch:     # Manual trigger from GitHub UI
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout your fork
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Git identity
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+      - name: Add upstream and fetch
+        run: |
+          git remote add upstream https://github.com/awdev1/BluDood-GlanceThing2.0.git
+          git fetch upstream
+
+      - name: Show git remotes and branches
+        run: |
+          git remote -v
+          git branch -a
+
+      - name: Merge upstream into temp branch
+        run: |
+          git checkout -b sync-upstream
+          git merge upstream/main --allow-unrelated-histories --no-edit
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: sync-upstream
+          title: "Sync with upstream"
+          body: "This PR merges the latest changes from [awdev1/BluDood-GlanceThing2.0](https://github.com/awdev1/BluDood-GlanceThing2.0)."
+          commit-message: "Merge upstream changes into sync-upstream"
+          delete-branch: true

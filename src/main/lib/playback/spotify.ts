@@ -348,11 +348,23 @@ class SpotifyHandler extends BasePlaybackHandler {
   lyricsCacheExpiration: number = 24 * 60 * 60 * 1000 // 24 hours
   cacheCleanupInterval: NodeJS.Timeout | null = null
   lyricsCacheStorageKey: string = 'spotify_lyrics_cache'
+  lastPlayedStorageKey: string = 'spotify_last_played'
 
   async setup(config: SpotifyConfig): Promise<void> {
     log('Setting up', 'Spotify')
 
     this.config = config
+
+    // Load last played data from storage
+    try {
+      const storedLastPlayed = getStorageValue(this.lastPlayedStorageKey)
+      if (storedLastPlayed) {
+        this.lastPlayedData = storedLastPlayed
+        log('Loaded last played track from storage', 'Spotify', LogLevel.DEBUG)
+      }
+    } catch (error) {
+      log(`Error loading last played data: ${error}`, 'Spotify', LogLevel.WARN)
+    }
 
     // Initialize axios instance first
     this.instance = axios.create({
@@ -481,6 +493,16 @@ class SpotifyHandler extends BasePlaybackHandler {
 
   async cleanup(): Promise<void> {
     log('Cleaning up', 'Spotify')
+
+    // Save last played data before cleanup
+    try {
+      if (this.lastPlayedData) {
+        setStorageValue(this.lastPlayedStorageKey, this.lastPlayedData)
+        log('Saved last played track to storage during cleanup', 'Spotify', LogLevel.DEBUG)
+      }
+    } catch (error) {
+      log(`Error saving last played data during cleanup: ${error}`, 'Spotify', LogLevel.WARN)
+    }
 
     this.saveLyricsCache()
     this.lyricsCache.clear()
@@ -614,6 +636,13 @@ class SpotifyHandler extends BasePlaybackHandler {
     const playbackData = filterData(current)
     if (playbackData) {
       this.lastPlayedData = playbackData
+      // Save last played data to storage
+      try {
+        setStorageValue(this.lastPlayedStorageKey, playbackData)
+        log('Saved last played track to storage', 'Spotify', LogLevel.DEBUG)
+      } catch (error) {
+        log(`Error saving last played data: ${error}`, 'Spotify', LogLevel.WARN)
+      }
     }
     return playbackData
   }

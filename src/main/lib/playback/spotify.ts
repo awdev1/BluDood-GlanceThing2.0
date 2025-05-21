@@ -341,21 +341,32 @@ class SpotifyHandler extends BasePlaybackHandler {
   webToken: string | null = null
   ws: WebSocket | null = null
   instance: AxiosInstance | null = null
+  lastPlayedData: PlaybackData | null = null
 
   lyricsCache: Map<string, { data: LyricsResponse; timestamp: number }> =
     new Map()
   lyricsCacheExpiration: number = 24 * 60 * 60 * 1000 // 24 hours
   cacheCleanupInterval: NodeJS.Timeout | null = null
   lyricsCacheStorageKey: string = 'spotify_lyrics_cache'
+  lastPlayedStorageKey: string = 'spotify_last_played'
 
   async setup(config: SpotifyConfig): Promise<void> {
     log('Setting up', 'Spotify')
 
     this.config = config
 
-    // Load lyrics cache from storage if available
-    this.loadLyricsCache()
+    // Load last played data from storage
+    try {
+      const storedLastPlayed = getStorageValue(this.lastPlayedStorageKey)
+      if (storedLastPlayed) {
+        this.lastPlayedData = storedLastPlayed
+        log('Loaded last played track from storage', 'Spotify', LogLevel.DEBUG)
+      }
+    } catch (error) {
+      log(`Error loading last played data: ${error}`, 'Spotify', LogLevel.WARN)
+    }
 
+    // Initialize axios instance first
     this.instance = axios.create({
       baseURL: 'https://api.spotify.com/v1',
       validateStatus: () => true
@@ -385,6 +396,7 @@ class SpotifyHandler extends BasePlaybackHandler {
       return res
     })
 
+    // Get tokens
     if (this.config!.sp_dc) {
       this.webToken = await getWebToken(this.config!.sp_dc).catch(err => {
         log(`Error getting webToken: ${err}`, 'Spotify', LogLevel.WARN)
@@ -401,6 +413,15 @@ class SpotifyHandler extends BasePlaybackHandler {
       return null
     })
 
+    // Load lyrics cache after storage is initialized
+    try {
+      this.loadLyricsCache()
+    } catch (error) {
+      log(`Error loading lyrics cache: ${error}`, 'Spotify', LogLevel.WARN)
+      this.lyricsCache = new Map()
+    }
+
+    // Setup WebSocket if webToken is available
     if (this.webToken) {
       this.ws = new WebSocket(
         `wss://dealer.spotify.com/?access_token=${this.webToken}`
@@ -410,6 +431,7 @@ class SpotifyHandler extends BasePlaybackHandler {
       this.emit('open', this.name)
     }
 
+    // Setup cache cleanup interval
     this.cacheCleanupInterval = setInterval(
       () => {
         this.cleanLyricsCache()
@@ -471,6 +493,16 @@ class SpotifyHandler extends BasePlaybackHandler {
 
   async cleanup(): Promise<void> {
     log('Cleaning up', 'Spotify')
+
+    // Save last played data before cleanup
+    try {
+      if (this.lastPlayedData) {
+        setStorageValue(this.lastPlayedStorageKey, this.lastPlayedData)
+        log('Saved last played track to storage during cleanup', 'Spotify', LogLevel.DEBUG)
+      }
+    } catch (error) {
+      log(`Error saving last played data during cleanup: ${error}`, 'Spotify', LogLevel.WARN)
+    }
 
     this.saveLyricsCache()
     this.lyricsCache.clear()
@@ -597,9 +629,22 @@ class SpotifyHandler extends BasePlaybackHandler {
 
   async getPlayback(): Promise<PlaybackData> {
     const current = await this.getCurrent()
-    if (!current) return null
+    if (!current) {
+      return this.lastPlayedData
+    }
 
-    return filterData(current)
+    const playbackData = filterData(current)
+    if (playbackData) {
+      this.lastPlayedData = playbackData
+      // Save last played data to storage
+      try {
+        setStorageValue(this.lastPlayedStorageKey, playbackData)
+        log('Saved last played track to storage', 'Spotify', LogLevel.DEBUG)
+      } catch (error) {
+        log(`Error saving last played data: ${error}`, 'Spotify', LogLevel.WARN)
+      }
+    }
+    return playbackData
   }
 
   async play(): Promise<void> {

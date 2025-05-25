@@ -7,8 +7,7 @@ import {
   useCallback,
   WheelEvent
 } from 'react'
-
-import { formatTime, debouncedFunction } from '@/lib/utils.ts'
+import { formatTime, debounce } from '@/lib/utils.ts'
 
 import BaseWidget from '../BaseWidget/BaseWidget.tsx'
 
@@ -130,22 +129,20 @@ const Player: React.FC = () => {
       let stopAnimation = false
 
       if (isLeftToRight) {
-        // Left to right
         newPosition += speed
         shouldContinue = true
 
         if (newPosition >= maxScroll) {
           newPosition = maxScroll
-          stopAnimation = handleDirectionChange(false) // Change to right-to-left
+          stopAnimation = handleDirectionChange(false)
         }
       } else {
-        // Right to left
         newPosition -= speed
         shouldContinue = true
 
         if (newPosition <= 0) {
           newPosition = 0
-          stopAnimation = handleDirectionChange(true) // Change to left-to-right
+          stopAnimation = handleDirectionChange(true)
         }
       }
 
@@ -159,18 +156,18 @@ const Player: React.FC = () => {
       const overflowAmount = contentWidth - containerWidth
 
       if (overflowAmount < 0) {
-        return 0 // No overflow
+        return 0
       }
 
       switch (true) {
         case overflowAmount < 50:
-          return 0.1 // Very slow for minimal overflow
+          return 0.1
         case overflowAmount < 100:
-          return 0.2 // Slow for small overflow
+          return 0.2
         case overflowAmount < 200:
-          return 0.3 // Medium for moderate overflow
+          return 0.3
         default:
-          return 0.4 // Normal for significant overflow
+          return 0.4
       }
     },
     []
@@ -304,7 +301,7 @@ const Player: React.FC = () => {
     ) {
       nameScrollPositionRef.current = 0
       artistScrollPositionRef.current = 0
-      scrollDirectionRef.current = 1 // Start left-to-right
+      scrollDirectionRef.current = 1
       lastAnimationTimestampRef.current = 0
 
       if (nameRef.current)
@@ -332,7 +329,7 @@ const Player: React.FC = () => {
         (shouldScrollTrackName || shouldScrollArtists) &&
         !animationFrameRef.current
       ) {
-        lastAnimationTimestampRef.current = 0 // Reset timestamp
+        lastAnimationTimestampRef.current = 0
         animationFrameRef.current = requestAnimationFrame(animateScroll)
       }
     }
@@ -413,7 +410,7 @@ const Player: React.FC = () => {
   ])
 
   useEffect(() => {
-    const debouncedResize = debouncedFunction(() => {
+    const debouncedResize = debounce(() => {
       checkTextOverflow()
     }, 200)
 
@@ -425,7 +422,6 @@ const Player: React.FC = () => {
     }
   }, [checkTextOverflow])
 
-  // Wrap volume control functions in useCallback to maintain stable references
   const volumeUp = useCallback(() => {
     if (playerDataRef.current === null) return
     if (!playerDataRef.current.supportedActions.includes('volume')) return
@@ -456,7 +452,6 @@ const Player: React.FC = () => {
     }
   }, [actions, playerDataRef])
 
-  // Wrap onWheel in useCallback to prevent it from changing on every render
   const onWheel = useCallback(
     (e: WheelEvent<HTMLDivElement>) => {
       if (e.deltaX < 0) {
@@ -581,7 +576,7 @@ const Player: React.FC = () => {
     return () => {
       document.removeEventListener('wheel', handleWheelEvent)
     }
-  }, [onWheel]) // Include onWheel in the dependency array
+  }, [onWheel])
 
   return (
     <BaseWidget
@@ -589,7 +584,7 @@ const Player: React.FC = () => {
       onKeyDown={onKeyDown}
       ref={playerRef}
     >
-      {playerData ? (
+      {playerData && playerData.track ? (
         <>
           <button onMouseDown={handleCoverPress} className={styles.cover}>
             <div

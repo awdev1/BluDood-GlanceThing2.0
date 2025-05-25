@@ -20,58 +20,57 @@
   max-width: 50%;
 }
 
-.column {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-}
-
 .widgetsPanel {
   width: 50%;
   display: flex;
   flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.sectionsContainer {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.sectionColumn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transition:
+    transform 0.3s ease-out,
+    opacity 0.3s ease-out;
+  will-change: transform, opacity;
+}
+
+.hiddenSection {
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(100%);
+}
+
+.activeSection {
+  opacity: 1;
+  transform: translateX(0);
+  z-index: 1;
 }
 
 .pagination {
   width: 100%;
   text-align: center;
-  height: 28px;
-}
-
-.scroll {
-  display: flex;
-  height: 100%;
-  scroll-snap-type: x mandatory;
-  overflow-x: auto;
-  scroll-behavior: smooth;
-  max-width: 100%;
-  -webkit-overflow-scrolling: touch;
-  will-change: scroll-position;
-  transform: translateZ(0);
-  contain: paint style;
-  touch-action: pan-x;
-  overscroll-behavior: none;
-  scroll-timeline: --pageScroll x;
-  scroll-timeline-axis: x;
-}
-
-.scroll > .column {
-  scroll-snap-align: start;
-  min-width: 100%;
-  contain: paint layout;
-  transform: translateZ(0);
-  height: 100%;
-}
-
-.pagination {
+  height: 34px;
   display: flex;
   place-content: center;
-  margin-bottom: 5px;
-  contain: paint;
-  touch-action: manipulation;
   position: relative;
-  z-index: 1;
+  z-index: 2;
   gap: 2px;
 }
 
@@ -84,23 +83,28 @@
   text-indent: 100vw;
   background: rgba(255, 255, 255, 0.5);
   margin: 5px;
-  height: 18px;
-  width: 18px;
-  transition: transform 0.2s linear;
+  height: 25px;
+  width: 25px;
+  transition:
+    transform 0.2s linear,
+    background-color 0.2s linear;
   cursor: pointer;
   will-change: transform;
+  outline: none;
 }
 
 .pagination .pageBtn.active {
-  transform: scale(1.2);
+  transform: scale(1.05);
   background-color: rgba(255, 255, 255, 1);
 }
 
+.pagination .pageBtn:focus,
 .pagination .pageBtn:hover,
 .pagination .pageBtn:focus-visible {
   outline: none;
   box-shadow: none;
   background-color: rgba(255, 255, 255, 1) !important;
+  border: none;
 }
 
 ::-webkit-scrollbar {

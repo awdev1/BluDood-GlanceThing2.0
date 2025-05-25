@@ -14,9 +14,7 @@ export function formatDate(d = new Date()) {
   return {
     time,
     date,
-    dateTime,
-    timeFormat,
-    dateFormat
+    dateTime
   }
 }
 

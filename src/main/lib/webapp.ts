@@ -34,7 +34,7 @@ export async function getWebAppDir() {
   if (fs.existsSync(extractPath))
     fs.rmSync(extractPath, { recursive: true })
 
-  const url = `https://github.com/awdev1/BluDood-GlanceThing2.0/releases/download/v${version}/glancething-client-v${version}.zip`
+  const url = `https://github.com/BluDood/GlanceThing/releases/download/v${version}/glancething-client-v${version}.zip`
 
   const res = await axios.get(url, {
     responseType: 'stream',
@@ -120,6 +120,12 @@ export async function importCustomWebApp() {
   if (extract === null) {
     log('Failed to extract custom client', 'Client Webapp', LogLevel.ERROR)
     throw new Error('extract_failed')
+  }
+
+  if (!fs.existsSync(path.join(clientFolder, 'index.html'))) {
+    fs.rmSync(clientFolder, { recursive: true })
+    log('Invalid custom client uploaded', 'Client Webapp', LogLevel.ERROR)
+    throw new Error('invalid_custom_client')
   }
 
   log('Extracted custom client', 'Client Webapp')

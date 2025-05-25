@@ -146,7 +146,7 @@ const SpotifyAPISetup: React.FC<SpotifyAPISetupProps> = ({
       <p>
         Make sure to select{' '}
         <code>Read access to a user&apos;s player state</code> and{' '}
-        <code>Write access to a user&apos;s player state</code> as the
+        <code>Write access to a user&apos;s playback state</code> as the
         scope.
       </p>
 

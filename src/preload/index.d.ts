@@ -62,6 +62,8 @@ declare global {
       }>
       removeScreensaverImage: () => Promise<boolean>
       hasCustomScreensaverImage: () => Promise<boolean>
+      openDevTools: () => void
+      getChannel: () => Promise<'stable' | 'nightly'>
       updateWeather: () => Promise<boolean>
     }
   }

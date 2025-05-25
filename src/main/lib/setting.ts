@@ -4,6 +4,8 @@ import { getStorageValue } from './storage.js'
 
 export function getClientSettings() {
   const clientKeys = [
+    'timeFormat',
+    'dateFormat',
     'showStatusBar',
     'showTimeWidget',
     'showWeatherWidget',

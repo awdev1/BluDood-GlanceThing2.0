@@ -1,0 +1,325 @@
+.activeDevice {
+  color: #1db954;
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 0.9rem;
+  vertical-align: middle;
+}
+
+.deviceListContainer {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.deviceListContent {
+  overflow-y: auto;
+  flex: 1;
+  scrollbar-color: #444 #282828;
+  padding: 0 15px;
+  height: 100%;
+}
+
+.listHeader {
+  display: flex;
+  justify-content: space-around;
+  gap: 4px;
+  padding: 10px 0;
+  position: sticky;
+  top: 0;
+  background: #111;
+  z-index: 2;
+}
+
+.headerButton {
+  border: none;
+  border-radius: 50%;
+  padding: 15px;
+  margin-bottom: 0;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+}
+
+.headerButton:hover {
+  background-color: #444;
+  color: white;
+}
+
+.headerButton span {
+  font-size: 20px;
+}
+
+.deviceList {
+  list-style: none;
+  margin: 0;
+  padding: 10px 20px 20px 10px;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.deviceItem {
+  background-color: #282828;
+  border-radius: 20px;
+  padding: 12px;
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: row;
+  transition: background-color 0.2s;
+  justify-content: space-between;
+}
+
+.deviceItem:hover {
+  background-color: #333;
+}
+
+.deviceItem.active {
+  padding-left: 12px;
+  background-color: rgba(29, 185, 84, 0.5);
+}
+
+.deviceInfo {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
+
+.deviceInfoItem {
+  display: flex;
+  align-items: flex-start;
+  flex-flow: column;
+}
+
+.deviceIcon {
+  font-size: 22px;
+  margin-right: 10px;
+  color: #1db954;
+}
+
+.deviceDetails {
+  flex-grow: 1;
+  display: flex;
+  margin-bottom: 8px;
+}
+
+.deviceName {
+  display: block;
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 2px;
+}
+
+.deviceType {
+  display: block;
+  color: #b3b3b3;
+  font-size: 0.8rem;
+  text-transform: capitalize;
+}
+
+.deviceControls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.volumeControls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #b3b3b3;
+  margin-right: 10px;
+  padding: 4px 0;
+}
+
+.volumeButton {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #b3b3b3;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.volumeButton::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition:
+    width 0.3s,
+    height 0.3s;
+}
+
+.volumeButton:active::after {
+  width: 100%;
+  height: 100%;
+}
+
+.volumeButton:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  transform: scale(1.05);
+}
+
+.volumeButton:active:not(:disabled) {
+  background: rgba(29, 185, 84, 0.2);
+  color: #1db954;
+  transform: scale(0.95);
+}
+
+.volumeButton:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.volumeButton .material-icons {
+  font-size: 24px;
+}
+
+.volumeInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 60px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.volumeIcon {
+  font-size: 28px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 4px;
+  border-radius: 50%;
+}
+
+.volumeIcon:hover {
+  color: #1db954;
+  background: rgba(29, 185, 84, 0.1);
+}
+
+.volumeDisplay {
+  color: #b3b3b3;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.transferButton {
+  background-color: #1db954;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  padding: 15px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.transferButton span {
+  font-size: 20px;
+}
+
+.transferButton:hover:not(:disabled) {
+  background-color: #1ed760;
+}
+
+.transferButton:disabled {
+  background-color: #535353;
+  cursor: not-allowed;
+}
+
+.transferButton.error {
+  background-color: #ff5252;
+  cursor: not-allowed;
+}
+
+.transferError {
+  color: #ff5252;
+  font-size: 0.75rem;
+  margin-top: 6px;
+}
+
+.refreshing,
+.errorMessage,
+.noDevices {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.refreshing span,
+.errorMessage span,
+.noDevices span {
+  font-size: 20px;
+  margin: 10px;
+}
+
+.errorMessage button,
+.noDevices button {
+  background-color: #535353;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 16px;
+  margin-top: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.errorMessage button:hover,
+.noDevices button:hover {
+  background-color: #686868;
+}
+
+.rotating {
+  animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

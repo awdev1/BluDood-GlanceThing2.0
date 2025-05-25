@@ -4,8 +4,10 @@ import { useNavigate } from 'react-router-dom'
 import { DevModeContext } from '@/contexts/DevModeContext.js'
 
 import icon from '@/assets/icon.png'
+import iconNightly from '@/assets/icon-nightly.png'
 
 import styles from './Home.module.css'
+import { ChannelContext } from '@/contexts/ChannelContext.js'
 
 enum CarThingState {
   NotFound = 'not_found',
@@ -17,6 +19,7 @@ enum CarThingState {
 const Home: React.FC = () => {
   const navigate = useNavigate()
   const { devMode } = useContext(DevModeContext)
+  const { channel } = useContext(ChannelContext)
   const [hasCustomClient, setHasCustomClient] = useState(false)
 
   const [carThingState, setCarThingState] = useState<CarThingState | null>(
@@ -62,8 +65,8 @@ const Home: React.FC = () => {
 
   return (
     <div className={styles.home}>
-      <img src={icon} alt="" />
-      <h1>GlanceThing</h1>
+      <img src={channel === 'nightly' ? iconNightly : icon} alt="" />
+      <h1>GlanceThing{channel === 'nightly' ? ' Nightly' : ''}</h1>
       <div className={styles.status}>
         {carThingState === CarThingState.NotFound ? (
           <>

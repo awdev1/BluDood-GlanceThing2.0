@@ -8,7 +8,6 @@ import {
 } from 'react'
 import { AppStateContext } from '@/contexts/AppStateContext.tsx'
 import { MediaContext } from '@/contexts/MediaContext.tsx'
-import { debouncedFunction } from '@/lib/utils.ts'
 
 import Controls from './widgets/Controls/Controls.tsx'
 import Player from './widgets/Player/Player.tsx'
@@ -35,75 +34,67 @@ const Widgets: React.FC = () => {
   } = useContext(AppStateContext)
   const { playerData, lyricsData } = useContext(MediaContext)
   const widgetsRef = useRef<HTMLDivElement>(null)
-  const scrollRef = useRef<HTMLDivElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+  const paginationRef = useRef<HTMLDivElement>(null)
   const [timeVisible, setTimeVisible] = useState(false)
   const [weatherVisible, setWeatherVisible] = useState(false)
   const [appsVisible, setAppsVisible] = useState(false)
   const [controlsVisible, setControlsVisible] = useState(false)
   const [lyricsVisible, setLyricsVisible] = useState(false)
   const [activeSection, setActiveSection] = useState(1)
-  const [isUserScrolling, setIsUserScrolling] = useState(false)
-  const [isUserScrolled, setIsUserScrolled] = useState(false)
-  const userScrollingTimer = useRef<ReturnType<typeof setTimeout> | null>(
+  const [isUserInteracting, setIsUserInteracting] = useState(false)
+  const userInteractionTimer = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null)
+  const lyricsCheckTimer = useRef<ReturnType<typeof setTimeout> | null>(
     null
   )
+  const autoSwitchEnabled = useRef(false)
   const [currentTrackId, setCurrentTrackId] = useState<string | null>(null)
+  const hasAutoSwitchedForTrack = useRef<string | null>(null)
+  const isTrackChanging = useRef(false)
 
-  const markUserInteracting = useCallback(() => {
-    setIsUserScrolling(true)
-    setIsUserScrolled(true)
+  useEffect(() => {
+    autoSwitchEnabled.current = autoSwitchToLyrics
+  }, [autoSwitchToLyrics])
 
-    if (userScrollingTimer.current) {
-      clearTimeout(userScrollingTimer.current)
+  const touchStartX = useRef<number | null>(null)
+  const touchMoveX = useRef<number | null>(null)
+  const SWIPE_THRESHOLD = 50 // Minimum distance to consider a swipe
+
+  const markUserInteracting = useCallback((duration = 2000) => {
+    setIsUserInteracting(true)
+
+    if (userInteractionTimer.current) {
+      clearTimeout(userInteractionTimer.current)
     }
 
-    userScrollingTimer.current = setTimeout(() => {
-      setIsUserScrolling(false)
-      userScrollingTimer.current = null
-    }, 2000)
+    userInteractionTimer.current = setTimeout(() => {
+      setIsUserInteracting(false)
+      userInteractionTimer.current = null
+    }, duration)
   }, [])
 
-  const handlePaginationClick = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault()
-      markUserInteracting()
-
-      const target = e.target as HTMLElement
-      const indexStr = target.getAttribute('data-index')
-      if (indexStr) {
-        const index = parseInt(indexStr, 10)
-        if (index !== activeSection - 1) {
-          setActiveSection(index + 1)
-
-          setTimeout(() => {
-            if (scrollRef.current) {
-              const sectionWidth = scrollRef.current.clientWidth
-              scrollRef.current.scrollTo({
-                left: index * sectionWidth,
-                behavior: 'smooth'
-              })
-            }
-          }, 0)
-        }
-      }
-    },
-    [activeSection, markUserInteracting]
-  )
-
-  const updateActiveSection = useCallback(() => {
-    if (!scrollRef.current) return
-
-    const scrollPosition = scrollRef.current.scrollLeft
-    const sectionWidth = scrollRef.current.clientWidth
-    const sectionIndex = Math.round(scrollPosition / sectionWidth) + 1
-
-    if (sectionIndex !== activeSection) {
-      setActiveSection(sectionIndex)
-    }
-  }, [activeSection])
+  useEffect(() => {
+    setTimeVisible(showTimeWidget)
+    setWeatherVisible(showWeatherWidget)
+    setAppsVisible(showAppsWidget)
+    setControlsVisible(showControlsWidget)
+    const supportLyrics =
+      playerData?.supportedActions.includes('lyrics') ?? false
+    setLyricsVisible(showLyricsWidget && supportLyrics)
+  }, [
+    showTimeWidget,
+    showWeatherWidget,
+    showAppsWidget,
+    showControlsWidget,
+    showLyricsWidget,
+    playerData?.supportedActions
+  ])
 
   const sectionsList = useMemo(() => {
     const list: SectionContent[] = []
+
     if (timeVisible || weatherVisible) {
       list.push({
         components: [
@@ -112,6 +103,7 @@ const Widgets: React.FC = () => {
         ]
       })
     }
+
     if (appsVisible || controlsVisible) {
       list.push({
         components: [
@@ -120,6 +112,7 @@ const Widgets: React.FC = () => {
         ]
       })
     }
+
     if (lyricsVisible) {
       list.push({
         components: [
@@ -131,6 +124,7 @@ const Widgets: React.FC = () => {
         ]
       })
     }
+
     return list
   }, [
     timeVisible,
@@ -140,154 +134,115 @@ const Widgets: React.FC = () => {
     lyricsVisible
   ])
 
-  const sections = useMemo(() => {
-    return sectionsList.map((section, index) => {
-      if (index === sectionsList.length - 1 && lyricsVisible) {
-        return {
-          ...section,
-          components: [
-            <Lyrics
-              key="lyrics"
-              visible={lyricsVisible}
-              sectionActive={activeSection === index + 1}
-            />
-          ]
-        }
-      }
-      return section
-    })
-  }, [sectionsList, lyricsVisible, activeSection])
-
-  const widgetsPanelVisible = useMemo(
-    () => sections.length > 0,
-    [sections.length]
-  )
-
-  useEffect(() => {
-    setTimeVisible(showTimeWidget)
-    setWeatherVisible(showWeatherWidget)
-    setAppsVisible(showAppsWidget)
-    setControlsVisible(showControlsWidget)
-    setLyricsVisible(showLyricsWidget)
-  }, [
-    showTimeWidget,
-    showWeatherWidget,
-    showAppsWidget,
-    showControlsWidget,
-    showLyricsWidget
-  ])
-
-  const navigateToSection = useCallback(
-    (sectionIndex: number) => {
-      console.log(
-        `Navigating to section ${sectionIndex + 1}, current: ${activeSection}`
-      )
-
-      setActiveSection(sectionIndex + 1)
-
-      setTimeout(() => {
-        if (!scrollRef.current) {
-          console.log('Scroll ref is null')
-          return
-        }
-
-        const sectionWidth = scrollRef.current.clientWidth
-        console.log(`Scrolling to ${sectionIndex * sectionWidth}px`)
-
-        scrollRef.current.scrollTo({
-          left: sectionIndex * sectionWidth,
-          behavior: 'smooth'
-        })
-
-        setTimeout(() => {
-          const sectionElement = document.getElementById(
-            `section-${sectionIndex + 1}`
-          )
-          if (sectionElement) {
-            const firstSectionWidget = sectionElement.querySelector(
-              '#widget'
-            ) as HTMLDivElement
-            if (firstSectionWidget) firstSectionWidget.focus()
-          } else {
-            console.log(`Couldn't find section-${sectionIndex + 1}`)
-          }
-        }, 100)
-      }, 10)
-    },
-    [activeSection]
-  )
-
-  useEffect(() => {
-    if (activeSection > sections.length) {
-      setActiveSection(Math.max(1, sections.length))
-    }
-  }, [sections.length, activeSection])
-
   const lyricsIndex = useMemo(() => {
     if (!lyricsVisible) return -1
-    return sections.findIndex((_, index) => {
-      return index === sections.length - 1 && lyricsVisible
-    })
-  }, [sections, lyricsVisible])
+    return sectionsList.length - 1
+  }, [sectionsList.length, lyricsVisible])
 
-  const canSwitchToLyrics = useCallback(() => {
-    const hasLyrics =
-      lyricsData?.lyrics?.lines && lyricsData.lyrics?.lines?.length > 0
-    if (
-      !autoSwitchToLyrics ||
-      !lyricsVisible ||
-      lyricsIndex === -1 ||
-      isUserScrolling ||
-      !hasLyrics ||
-      activeSection === lyricsIndex + 1
-    ) {
+  const handlePaginationClick = useCallback(
+    (sectionIndex: number, isAutoSwitch = false) => {
+      if (sectionIndex < 0 || sectionIndex >= sectionsList.length) {
+        return
+      }
+
+      if (!isAutoSwitch) {
+        markUserInteracting()
+      }
+
+      setActiveSection(sectionIndex + 1)
+    },
+    [sectionsList.length, markUserInteracting]
+  )
+
+  const handlePaginationButtonClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault()
+
+      const target = e.target as HTMLElement
+      const indexStr = target.getAttribute('data-index')
+      if (indexStr) {
+        const index = parseInt(indexStr, 10)
+        handlePaginationClick(index)
+      }
+    },
+    [handlePaginationClick]
+  )
+
+  const shouldAutoSwitchToLyrics = useCallback(() => {
+    if (!autoSwitchEnabled.current) return false
+    if (!showLyricsWidget) return false
+    if (isUserInteracting) return false
+    if (lyricsIndex === -1) return false
+    if (activeSection === lyricsIndex + 1) return false
+    const currentTrack = playerData?.track?.id ?? null
+    if (!currentTrack) return false
+    if (hasAutoSwitchedForTrack.current === currentTrack) return false
+    if (!lyricsData?.lyrics?.lines || lyricsData.lyrics.lines.length === 0)
       return false
-    }
     return true
   }, [
-    autoSwitchToLyrics,
-    lyricsVisible,
+    showLyricsWidget,
+    isUserInteracting,
     lyricsIndex,
-    isUserScrolling,
-    lyricsData,
-    activeSection
+    activeSection,
+    playerData,
+    lyricsData
   ])
 
   useEffect(() => {
-    if (!playerData?.track) return
-
-    const trackId = `${playerData.track.name}-${playerData.track.artists.join(',')}`
-    const trackChanged = trackId !== currentTrackId
-
-    if (trackChanged) {
-      setCurrentTrackId(trackId)
-      setIsUserScrolled(false)
+    const newTrackId = playerData?.track?.id ?? null
+    if (currentTrackId === newTrackId) return
+    isTrackChanging.current = true
+    setCurrentTrackId(newTrackId)
+    hasAutoSwitchedForTrack.current = null
+    if (!newTrackId) {
+      isTrackChanging.current = false
+      return
     }
+    if (lyricsData?.lyrics?.lines && lyricsData.lyrics.lines.length > 0) {
+      const shouldSwitch = shouldAutoSwitchToLyrics()
 
-    const shouldSwitch = canSwitchToLyrics()
-
-    if (shouldSwitch) {
-      if (
-        (trackChanged && !isUserScrolled) ||
-        (!isUserScrolled && playerData.isPlaying)
-      ) {
-        console.log(`Auto-switching to lyrics section (${lyricsIndex})`)
-
-        const switchTimeout = setTimeout(() => {
-          navigateToSection(lyricsIndex)
-        }, 1000)
-
-        return () => clearTimeout(switchTimeout)
+      if (shouldSwitch && lyricsIndex >= 0) {
+        hasAutoSwitchedForTrack.current = newTrackId
+        setActiveSection(lyricsIndex + 1)
       }
     }
+    const trackChangeTimeout = setTimeout(() => {
+      isTrackChanging.current = false
+    }, 10000)
+
+    return () => {
+      clearTimeout(trackChangeTimeout)
+      isTrackChanging.current = false
+    }
   }, [
-    playerData,
+    playerData?.track?.id,
+    shouldAutoSwitchToLyrics,
+    lyricsData?.lyrics,
     currentTrackId,
-    canSwitchToLyrics,
-    isUserScrolled,
-    navigateToSection,
     lyricsIndex
   ])
+
+  useEffect(() => {
+    if (!isTrackChanging.current || !currentTrackId) return
+    if (
+      !lyricsData?.lyrics?.lines ||
+      lyricsData.lyrics.lines.length === 0
+    ) {
+      return
+    }
+    if (hasAutoSwitchedForTrack.current === currentTrackId) return
+
+    const shouldSwitch = shouldAutoSwitchToLyrics()
+
+    if (shouldSwitch) {
+      hasAutoSwitchedForTrack.current = currentTrackId
+
+      if (lyricsIndex >= 0) {
+        setActiveSection(lyricsIndex + 1)
+      }
+    }
+  }, [lyricsData, currentTrackId, shouldAutoSwitchToLyrics, lyricsIndex])
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -303,10 +258,19 @@ const Widgets: React.FC = () => {
           if (playerWidget) playerWidget.focus()
         } else if (keyNum >= 2 && keyNum <= 4) {
           const sectionIndex = keyNum - 2
-
-          if (sectionIndex < sections.length) {
-            navigateToSection(sectionIndex)
+          if (sectionIndex < sectionsList.length) {
+            handlePaginationClick(sectionIndex)
           }
+        }
+      }
+
+      if (e.key === 'ArrowLeft') {
+        if (activeSection > 1) {
+          handlePaginationClick(activeSection - 2)
+        }
+      } else if (e.key === 'ArrowRight') {
+        if (activeSection < sectionsList.length) {
+          handlePaginationClick(activeSection - 1)
         }
       }
     }
@@ -316,60 +280,64 @@ const Widgets: React.FC = () => {
     return () => {
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [sections.length, navigateToSection, markUserInteracting])
-
-  useEffect(() => {
-    const scrollElement = scrollRef.current
-    if (!scrollElement) return
-
-    const sectionWidth = scrollElement.clientWidth
-
-    updateActiveSection()
-
-    const debouncedUpdate = debouncedFunction(() => {
-      if (!scrollElement) return
-
-      const scrollPosition = scrollElement.scrollLeft
-      const newSectionIndex = Math.round(scrollPosition / sectionWidth) + 1
-
-      if (newSectionIndex !== activeSection) {
-        setActiveSection(newSectionIndex)
-      }
-    }, 30)
-
-    const handleScroll = () => {
-      markUserInteracting()
-      debouncedUpdate()
-    }
-
-    scrollElement.addEventListener('scroll', handleScroll, {
-      passive: true
-    })
-
-    return () => {
-      scrollElement.removeEventListener('scroll', handleScroll)
-      debouncedUpdate.cancel()
-    }
   }, [
+    sectionsList.length,
     activeSection,
-    sections.length,
-    updateActiveSection,
+    handlePaginationClick,
     markUserInteracting
   ])
 
   useEffect(() => {
-    if (activeSection > sections.length && sections.length > 0) {
-      setActiveSection(1)
+    if (activeSection > sectionsList.length) {
+      setActiveSection(Math.max(1, sectionsList.length))
     }
-    if (scrollRef.current && sections.length > 0) {
-      setTimeout(updateActiveSection, 0)
+  }, [sectionsList.length, activeSection])
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX
+    touchMoveX.current = null
+  }, [])
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (touchStartX.current !== null) {
+      touchMoveX.current = e.touches[0].clientX
     }
-  }, [sections.length, activeSection, updateActiveSection])
+  }, [])
+
+  const handleTouchEnd = useCallback(() => {
+    if (touchStartX.current !== null && touchMoveX.current !== null) {
+      const deltaX = touchMoveX.current - touchStartX.current
+
+      if (Math.abs(deltaX) > SWIPE_THRESHOLD) {
+        markUserInteracting()
+
+        if (deltaX > 0 && activeSection > 1) {
+          handlePaginationClick(activeSection - 2)
+        } else if (deltaX < 0 && activeSection < sectionsList.length) {
+          handlePaginationClick(activeSection)
+        }
+      }
+    }
+
+    touchStartX.current = null
+    touchMoveX.current = null
+  }, [
+    activeSection,
+    sectionsList.length,
+    handlePaginationClick,
+    markUserInteracting
+  ])
 
   useEffect(() => {
     return () => {
-      if (userScrollingTimer.current) {
-        clearTimeout(userScrollingTimer.current)
+      if (userInteractionTimer.current) {
+        clearTimeout(userInteractionTimer.current)
+        userInteractionTimer.current = null
+      }
+
+      if (lyricsCheckTimer.current) {
+        clearTimeout(lyricsCheckTimer.current)
+        lyricsCheckTimer.current = null
       }
     }
   }, [])
@@ -380,29 +348,46 @@ const Widgets: React.FC = () => {
       ref={widgetsRef}
     >
       <div
-        className={`${styles.player} ${widgetsPanelVisible ? styles.withWidgetsPanel : ''}`}
+        className={`${styles.player} ${sectionsList.length > 0 ? styles.withWidgetsPanel : ''}`}
       >
         <Player />
       </div>
-      {widgetsPanelVisible && (
-        <div className={styles.widgetsPanel}>
-          <div className={styles.scroll} ref={scrollRef}>
-            {sections.map((section, index) => (
+      {sectionsList.length > 0 && (
+        <div
+          className={styles.widgetsPanel}
+          ref={panelRef}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          <div className={styles.sectionsContainer}>
+            {sectionsList.map((section, index) => (
               <div
                 key={`section-${index + 1}`}
-                className={styles.column}
+                className={`${styles.sectionColumn} ${activeSection === index + 1 ? styles.activeSection : styles.hiddenSection}`}
                 id={`section-${index + 1}`}
               >
-                {section.components.map(component => component)}
+                {index === sectionsList.length - 1 &&
+                lyricsVisible &&
+                index === activeSection - 1 ? (
+                  <Lyrics
+                    key="lyrics-active"
+                    visible={lyricsVisible}
+                    sectionActive={true}
+                  />
+                ) : (
+                  section.components.map(component => component)
+                )}
               </div>
             ))}
           </div>
-          {sections.length > 1 && (
+          {sectionsList.length > 1 && (
             <div
               className={styles.pagination}
-              onClick={handlePaginationClick}
+              onClick={handlePaginationButtonClick}
+              ref={paginationRef}
             >
-              {sections.map((_, index) => {
+              {sectionsList.map((_, index) => {
                 const isActive = activeSection === index + 1
                 return (
                   <div
@@ -410,6 +395,8 @@ const Widgets: React.FC = () => {
                     data-index={index.toString()}
                     className={`${styles.pageBtn} ${isActive ? styles.active : ''}`}
                     role="button"
+                    aria-label={`Go to section ${index + 1}`}
+                    tabIndex={0}
                   ></div>
                 )
               })}

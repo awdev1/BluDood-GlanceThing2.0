@@ -9,70 +9,108 @@ import React, {
 
 import { SocketContext } from './SocketContext.tsx'
 
-import { PlaybackData, RepeatMode } from '@/types/Playback.js'
+import {
+  PlaybackData,
+  RepeatMode,
+  Track,
+  Album,
+  SpotifyPlaylistsItems,
+  SpotifyLyricsData
+} from '@/types/Playback.js'
 import { AppStateContext } from './AppStateContext.tsx'
 
-interface LyricsLine {
-  startTimeMs: string
-  endTimeMs: string
-  words: string
-  syllables: {
-    startTimeMs: string
-    endTimeMs: string
-    text: string
-  }[]
-}
-
-interface rgbColor {
-  r: number
-  g: number
-  b: number
-  a?: number
-}
-
-interface LyricsData {
-  lyrics: {
-    syncType: string
-    lines: LyricsLine[]
-  }
-  colors: {
-    background: rgbColor
-    text: rgbColor
-    highlightText: rgbColor
-  }
-  hasVocalRemoval: boolean
-  message: string
-}
-
 interface MediaContextProps {
-  image: string
+  image: string | null
   playerData: PlaybackData | null
   playerDataRef: React.MutableRefObject<PlaybackData | null>
-  lyricsData: LyricsData | null
+  lyricsData: SpotifyLyricsData | null
   currentLineIndex: number
+
+  playlistsData: SpotifyPlaylistsItems[] | null
+  albumsData: Album[] | null
+  playlistsOffset: number
+  playlistsTotal: number
+  playlistsLoading: boolean
+  setPlaylistsData?: React.Dispatch<
+    React.SetStateAction<SpotifyPlaylistsItems[] | null>
+  >
+  setAlbumsData?: React.Dispatch<React.SetStateAction<Album[] | null>>
+  setPlaylistsOffset?: React.Dispatch<React.SetStateAction<number>>
+  setPlaylistsLoading?: React.Dispatch<React.SetStateAction<boolean>>
+
+  likedSongsData: Track[] | null
+  likedSongsImage: string
+  likedSongsOffset: number
+  likedSongsTotal: number
+  likedSongsLoading: boolean
+  setLikedSongsData?: React.Dispatch<React.SetStateAction<Track[] | null>>
+  setLikedSongsOffset?: React.Dispatch<React.SetStateAction<number>>
+  setLikedSongsLoading?: React.Dispatch<React.SetStateAction<boolean>>
+
   actions: {
     playPause: () => void
     skipForward: () => void
     skipBackward: () => void
-    setVolume: (volume: number) => void
+    setVolume: (volume: number, deviceId?: string) => void
     shuffle: (state: boolean) => void
     repeat: (state: RepeatMode) => void
+    playlists: (offset: number) => void
+    playPlaylist: (playlistId: string) => void
+    albums: (offset: number) => void
+    playAlbum: (albumId: string) => void
+    likedSongs: (offset: number) => void
+    playlistTracks: (playlistId: string, offset: number) => void
+    albumTracks: (albumId: string, offset: number) => void
+    playTrack: (
+      trackID: string,
+      contextType?: string,
+      contextId?: string,
+      shuffle?: boolean
+    ) => void
+    devices: () => void
+    transferPlayback: (deviceId: string) => void
   }
 }
 
 const MediaContext = createContext<MediaContextProps>({
-  image: '',
+  image: null,
   playerData: null,
   playerDataRef: { current: null },
   lyricsData: null,
   currentLineIndex: -1,
+  playlistsData: null,
+  albumsData: null,
+  playlistsOffset: 0,
+  playlistsTotal: 0,
+  playlistsLoading: false,
+  setPlaylistsData: () => {},
+  setPlaylistsOffset: () => {},
+  setPlaylistsLoading: () => {},
+  likedSongsData: null,
+  likedSongsImage: '',
+  likedSongsOffset: 0,
+  likedSongsTotal: 0,
+  likedSongsLoading: false,
+  setLikedSongsData: () => {},
+  setLikedSongsOffset: () => {},
+  setLikedSongsLoading: () => {},
   actions: {
     playPause: () => {},
     skipForward: () => {},
     skipBackward: () => {},
     setVolume: () => {},
     shuffle: () => {},
-    repeat: () => {}
+    repeat: () => {},
+    playlists: () => {},
+    playPlaylist: () => {},
+    albums: () => {},
+    playAlbum: () => {},
+    likedSongs: () => {},
+    playlistTracks: () => {},
+    albumTracks: () => {},
+    playTrack: () => {},
+    devices: () => {},
+    transferPlayback: () => {}
   }
 })
 
@@ -87,9 +125,27 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
 
   const [playerData, setPlayerData] = useState<PlaybackData | null>(null)
   const playerDataRef = useRef<PlaybackData | null>(null)
-  const [image, setImage] = useState('')
-  const [lyricsData, setLyricsData] = useState<LyricsData | null>(null)
+  const [image, setImage] = useState<string | null>(null)
+  const [lyricsData, setLyricsData] = useState<SpotifyLyricsData | null>(
+    null
+  )
   const [currentLineIndex, setCurrentLineIndex] = useState<number>(-1)
+
+  const [playlistsData, setPlaylistsData] = useState<
+    SpotifyPlaylistsItems[] | null
+  >(null)
+  const [albumsData, setAlbumsData] = useState<Album[] | null>(null)
+  const [playlistsOffset, setPlaylistsOffset] = useState(0)
+  const [playlistsTotal, setPlaylistsTotal] = useState(0)
+  const [playlistsLoading, setPlaylistsLoading] = useState(false)
+
+  const [likedSongsData, setLikedSongsData] = useState<Track[] | null>(
+    null
+  )
+  const [likedSongsOffset, setLikedSongsOffset] = useState(0)
+  const [likedSongsTotal, setLikedSongsTotal] = useState(0)
+  const [likedSongsLoading, setLikedSongsLoading] = useState(false)
+  const [likedSongsImage, setLikedSongsImage] = useState<string>('')
 
   useEffect(() => {
     if (
@@ -99,7 +155,7 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
     )
       return
 
-    const currentTime = playerData.track.duration.current
+    const currentTime = playerData.track?.duration.current
 
     let foundIndex = -1
     const lines = lyricsData.lyrics.lines
@@ -107,6 +163,13 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
     if (currentTime < parseInt(lines[0].startTimeMs)) {
       if (currentLineIndex !== -1) {
         setCurrentLineIndex(-1)
+      }
+      return
+    }
+
+    if (currentTime > parseInt(lines[lines.length - 1].startTimeMs)) {
+      if (currentLineIndex !== lines.length - 1) {
+        setCurrentLineIndex(lines.length - 1)
       }
       return
     }
@@ -135,9 +198,7 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
     const currentTrack = playerDataRef.current?.track
     const newTrack = newData.track
     if (!currentTrack) return true
-    if (currentTrack.name !== newTrack.name) return true
-    if (currentTrack.artists.length !== newTrack.artists.length)
-      return true
+    if (currentTrack.id !== newTrack.id) return true
     for (let i = 0; i < currentTrack.artists.length; i++) {
       if (currentTrack.artists[i] !== newTrack.artists[i]) return true
     }
@@ -150,8 +211,17 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
       try {
         const { type, action, data } = JSON.parse(e.data)
         if (type !== 'playback') return
+        console.log('Received playback data:', action, data)
+        if (
+          action === 'trackPlayed' ||
+          action === 'playlistTracks' ||
+          action === 'albumTracks'
+        ) {
+          return
+        }
 
         if (action === 'image') {
+          if (!data) return setImage(null)
           setImage(`data:image/png;base64,${data}`)
           return
         }
@@ -161,39 +231,115 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
           return
         }
 
+        if (action === 'playlists') {
+          const isNewRequest = data.offset === 0
+
+          if (!data.items || !Array.isArray(data.items)) {
+            console.error('Invalid playlists data received:', data)
+            setPlaylistsLoading(false)
+            return
+          }
+
+          setPlaylistsData(prevData => {
+            if (isNewRequest || prevData === null) {
+              return data.items
+            }
+            const existingIds = new Set(prevData.map(item => item.id))
+            const uniqueNewItems = data.items.filter(
+              (item: { id: string }) => !existingIds.has(item.id)
+            )
+            return [...prevData, ...uniqueNewItems]
+          })
+
+          setPlaylistsOffset(data.offset + data.items.length)
+          setPlaylistsTotal(data.total)
+          setPlaylistsLoading(false)
+          return
+        }
+
+        if (action === 'albums') {
+          const isNewRequest = data.offset === 0
+          if (!data.items || !Array.isArray(data.items)) {
+            console.error('Invalid albums data received:', data)
+            setPlaylistsLoading(false)
+            return
+          }
+
+          setAlbumsData(prevData => {
+            if (isNewRequest || prevData === null) {
+              return data.items
+            }
+            const existingIds = new Set(prevData.map(item => item.id))
+            const uniqueNewItems = data.items.filter(
+              (item: { id: string }) => !existingIds.has(item.id)
+            )
+            return [...prevData, ...uniqueNewItems]
+          })
+          setPlaylistsOffset(data.offset + data.items.length)
+          setPlaylistsTotal(data.total)
+          setPlaylistsLoading(false)
+          return
+        }
+
+        if (action === 'likedSongs') {
+          const isNewRequest = data.offset === 0
+
+          if (!data.items || !Array.isArray(data.items)) {
+            console.error('Invalid liked songs data received:', data)
+            setLikedSongsLoading(false)
+            return
+          }
+
+          setLikedSongsData(prevData => {
+            if (isNewRequest || prevData === null) {
+              return data.items
+            }
+            const existingIds = new Set(prevData.map(item => item.id))
+            const uniqueNewItems = data.items.filter(
+              (item: { id: string }) => !existingIds.has(item.id)
+            )
+            return [...prevData, ...uniqueNewItems]
+          })
+          setLikedSongsImage(data.image || '')
+          setLikedSongsOffset(data.offset + data.items.length)
+          setLikedSongsTotal(data.total)
+          setLikedSongsLoading(false)
+          return
+        }
+
         if (!data) {
           setPlayerData(null)
           setLyricsData(null)
           return
         }
 
-        const playbackData = data as PlaybackData
-        if (hasTrackChanged(playbackData)) {
-          socket?.send(
-            JSON.stringify({ type: 'playback', action: 'image' })
-          )
-          if (showLyricsWidget) {
+        if (data.track?.id || data.track?.name) {
+          if (hasTrackChanged(data)) {
             socket?.send(
-              JSON.stringify({ type: 'playback', action: 'lyrics' })
+              JSON.stringify({ type: 'playback', action: 'image' })
             )
+            if (showLyricsWidget) {
+              socket?.send(
+                JSON.stringify({ type: 'playback', action: 'lyrics' })
+              )
+            }
           }
+
+          setPlayerData(prevData => {
+            if (!prevData) return data
+            const hasChanged =
+              hasTrackChanged(data) ||
+              prevData.isPlaying !== data.isPlaying ||
+              prevData.volume !== data.volume ||
+              prevData.shuffle !== data.shuffle ||
+              prevData.repeat !== data.repeat ||
+              prevData.track.duration.current !==
+                data.track.duration.current ||
+              prevData.track.duration.total !== data.track.duration.total
+
+            return hasChanged ? data : prevData
+          })
         }
-
-        setPlayerData(prevData => {
-          if (!prevData) return playbackData
-          const hasChanged =
-            hasTrackChanged(playbackData) ||
-            prevData.isPlaying !== playbackData.isPlaying ||
-            prevData.volume !== playbackData.volume ||
-            prevData.shuffle !== playbackData.shuffle ||
-            prevData.repeat !== playbackData.repeat ||
-            prevData.track.duration.current !==
-              playbackData.track.duration.current ||
-            prevData.track.duration.total !==
-              playbackData.track.duration.total
-
-          return hasChanged ? playbackData : prevData
-        })
       } catch (err) {
         console.error('Error parsing message:', err)
       }
@@ -208,7 +354,6 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
     }
     socketRef.current = socket
     if (ready === true && socket) {
-      socket.send(JSON.stringify({ type: 'playback' }))
       socket.addEventListener('message', handleSocketMessage)
       const refreshInterval = setInterval(() => {
         if (socket && socket.readyState === WebSocket.OPEN) {
@@ -228,6 +373,16 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
       socketRef.current = null
     }
   }, [ready, socket, handleSocketMessage])
+
+  useEffect(() => {
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(
+        JSON.stringify({
+          type: 'playback'
+        })
+      )
+    }
+  }, [socket])
 
   useEffect(() => {
     if (!playerData || !playerData.isPlaying) return
@@ -258,8 +413,7 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
   }, [playerData])
 
   type CommandData = {
-    volume?: number
-    state?: boolean | RepeatMode
+    [key: string]: string | number | boolean
   }
 
   const sendSocketCommand = useCallback(
@@ -267,7 +421,6 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
       const currentSocket = socket || socketRef.current
       if (!currentSocket || currentSocket.readyState !== WebSocket.OPEN)
         return false
-
       currentSocket.send(
         JSON.stringify({
           type,
@@ -305,10 +458,15 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
       if (playerDataRef.current === null) return
       sendSocketCommand('playback', 'previous')
     },
-    setVolume: (volume: number) => {
+    setVolume: (volume: number, deviceId?: string) => {
       if (playerDataRef.current === null) return
-
-      if (sendSocketCommand('playback', 'volume', { volume })) {
+      if (deviceId) {
+        sendSocketCommand('playback', 'volume', {
+          volume,
+          deviceId
+        })
+      } else {
+        sendSocketCommand('playback', 'volume', { volume })
         setPlayerData({
           ...playerDataRef.current!,
           volume: volume
@@ -334,6 +492,55 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
           repeat: state as RepeatMode
         })
       }
+    },
+    playlists: (offset: number) =>
+      sendSocketCommand('playback', 'playlists', { offset }),
+    playPlaylist: (playlistId: string) => {
+      sendSocketCommand('playback', 'playPlaylist', { playlistId })
+    },
+    albums: (offset: number) => {
+      setPlaylistsLoading(true)
+      sendSocketCommand('playback', 'albums', { offset })
+    },
+    playAlbum: (albumId: string) => {
+      sendSocketCommand('playback', 'playAlbum', { albumId })
+    },
+    likedSongs: (offset: number) => {
+      setLikedSongsLoading(true)
+      sendSocketCommand('playback', 'likedSongs', { offset })
+    },
+    playlistTracks: (playlistId: string, offset: number) =>
+      sendSocketCommand('playback', 'playlistTracks', {
+        playlistId,
+        offset
+      }),
+    albumTracks: (albumId: string, offset: number) =>
+      sendSocketCommand('playback', 'albumTracks', {
+        albumId,
+        offset
+      }),
+    playTrack: (
+      trackID: string,
+      contextType?: string,
+      contextId?: string
+    ) => {
+      if (contextType && contextId) {
+        sendSocketCommand('playback', 'playTrack', {
+          trackID,
+          contextType,
+          contextId
+        })
+      } else {
+        sendSocketCommand('playback', 'playTrack', {
+          trackID
+        })
+      }
+    },
+    devices: () => {
+      sendSocketCommand('playback', 'devices')
+    },
+    transferPlayback: (deviceId: string) => {
+      sendSocketCommand('playback', 'transferPlayback', { deviceId })
     }
   }
 
@@ -345,7 +552,23 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
         playerDataRef,
         lyricsData,
         currentLineIndex,
-        actions
+        actions,
+        playlistsData,
+        albumsData,
+        playlistsOffset,
+        playlistsTotal,
+        playlistsLoading,
+        setPlaylistsData,
+        setPlaylistsOffset,
+        setPlaylistsLoading,
+        likedSongsData,
+        likedSongsOffset,
+        likedSongsTotal,
+        likedSongsImage,
+        likedSongsLoading,
+        setLikedSongsData,
+        setLikedSongsOffset,
+        setLikedSongsLoading
       }}
     >
       {children}

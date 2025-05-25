@@ -27,8 +27,10 @@ import {
   downloadLogs,
   getLogs,
   isDev,
+  isNightly,
   log,
   LogLevel,
+  resourceFolder,
   setLogLevel
 } from './lib/utils.js'
 import { startServer, stopServer, isServerStarted } from './lib/server.js'
@@ -55,8 +57,6 @@ import {
   updateApps
 } from './lib/shortcuts.js'
 
-import icon from '../../resources/icon.png?asset'
-import trayIcon from '../../resources/tray.png?asset'
 import { playbackManager } from './lib/playback/playback.js'
 import {
   hasCustomWebApp,
@@ -78,10 +78,11 @@ function createWindow(): void {
     height: 670,
     show: false,
     autoHideMenuBar: true,
-    ...(process.platform === 'linux' ? { icon } : {}),
+    ...(process.platform === 'linux'
+      ? { icon: `${resourceFolder}/icon.png` }
+      : {}),
     webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
+      preload: join(__dirname, '../preload/index.js')
     },
     titleBarStyle: 'hidden',
     resizable: false,
@@ -147,7 +148,7 @@ app.on('ready', async () => {
     setStorageValue('devMode', true)
   }
   if (isDev()) log('Running in development mode', 'GlanceThing')
-  electronApp.setAppUserModelId('com.bludood.glancething')
+  electronApp.setAppUserModelId(`com.bludood.${app.getName()}`)
 
   const adbPath = await getAdbExecutable().catch(err => ({ err }))
 
@@ -228,6 +229,8 @@ enum IPCHandler {
   UploadScreensaverImage = 'uploadScreensaverImage',
   RemoveScreensaverImage = 'removeScreensaverImage',
   HasCustomScreensaverImage = 'hasCustomScreensaverImage',
+  OpenDevTools = 'openDevTools',
+  GetChannel = 'getChannel',
   UpdateWeather = 'updateWeather'
 }
 
@@ -327,7 +330,13 @@ async function setupIpcHandlers() {
   }
 
   async function interval() {
-    await carThingStateUpdate()
+    await carThingStateUpdate().catch(err => {
+      log(
+        `Error updating state: ${err.message}`,
+        'CarThingState',
+        LogLevel.ERROR
+      )
+    })
 
     setTimeout(interval, 5000)
   }
@@ -419,8 +428,8 @@ async function setupIpcHandlers() {
   })
 
   ipcMain.handle(IPCHandler.ImportCustomClient, async () => {
-    const res = await importCustomWebApp()
-    if (!res) return false
+    const res = await importCustomWebApp().catch(err => err.message)
+    if (typeof res === 'string') return res
     await installApp(null)
     return true
   })
@@ -455,6 +464,16 @@ async function setupIpcHandlers() {
     return hasCustomScreensaverImage()
   })
 
+  ipcMain.handle(IPCHandler.OpenDevTools, () => {
+    if (mainWindow) {
+      mainWindow.webContents.openDevTools()
+    }
+  })
+
+  ipcMain.handle(IPCHandler.GetChannel, () => {
+    return isNightly ? 'nightly' : 'stable'
+  })
+
   ipcMain.handle(IPCHandler.UpdateWeather, async () => {
     return await updateWeather()
   })
@@ -464,14 +483,14 @@ async function setupTray() {
   const icon =
     os.platform() === 'darwin'
       ? nativeImage
-          .createFromPath(trayIcon)
+          .createFromPath(`${resourceFolder}/tray.png`)
           .resize({ height: 24, width: 24 })
-      : trayIcon
+      : `${resourceFolder}/tray.png`
   const tray = new Tray(icon)
 
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: `GlanceThing v${app.getVersion()}`,
+      label: `GlanceThing${isNightly ? ' Nightly' : ''} v${app.getVersion()}`,
       enabled: false
     },
     {
@@ -497,7 +516,9 @@ async function setupTray() {
 
   tray.setContextMenu(contextMenu)
 
-  tray.setToolTip(`GlanceThing v${app.getVersion()}`)
+  tray.setToolTip(
+    `GlanceThing${isNightly ? ' Nightly' : ''} v${app.getVersion()}`
+  )
 
   tray.on('click', () => {
     if (os.platform() === 'darwin') return

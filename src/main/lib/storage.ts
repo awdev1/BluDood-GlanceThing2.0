@@ -15,8 +15,14 @@ const storageValueHandlers: Record<string, (value: unknown) => void> = {
       openAtLogin: value as boolean
     })
   },
-  timeFormat: updateTime,
-  dateFormat: updateTime,
+  timeFormat: () => {
+    notifyClientsOfSettingChanges()
+    updateTime()
+  },
+  dateFormat: () => {
+    notifyClientsOfSettingChanges()
+    updateTime()
+  },
   autoBrightness: async value => {
     await setAutoBrightness(null, value as boolean)
   },

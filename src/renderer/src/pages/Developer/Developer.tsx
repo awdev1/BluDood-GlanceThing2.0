@@ -10,10 +10,18 @@ enum CarThingState {
   Ready = 'ready'
 }
 
+const customClientErrors = {
+  extract_failed: 'Failed to extract custom client',
+  invalid_custom_client:
+    'Invalid custom client uploaded. Please check if the zip file directly contains the client files (such as index.html).'
+}
+
 const Developer: React.FC = () => {
   const navigate = useNavigate()
   const [serverStarted, setServerStarted] = useState(false)
   const [lyricsCacheCleared, setLyricsCacheCleared] = useState(false)
+  const [playlistImageCacheCleared, setPlaylistImageCacheCleared] =
+    useState(false)
 
   const clearLyricsCache = async () => {
     await window.api.setStorageValue('spotify_lyrics_cache', null)
@@ -21,6 +29,15 @@ const Developer: React.FC = () => {
 
     setTimeout(() => {
       setLyricsCacheCleared(false)
+    }, 3000)
+  }
+
+  const clearPlaylistImageCache = async () => {
+    await window.api.setStorageValue('spotify_playlist_image_cache', null)
+    setPlaylistImageCacheCleared(true)
+
+    setTimeout(() => {
+      setPlaylistImageCacheCleared(false)
     }, 3000)
   }
 
@@ -90,7 +107,12 @@ const Developer: React.FC = () => {
         ) : (
           <button
             onClick={() =>
-              window.api.importCustomClient().then(updateHasCustomClient)
+              window.api.importCustomClient().then(res => {
+                if (typeof res === 'string')
+                  alert(customClientErrors[res] || res)
+
+                updateHasCustomClient()
+              })
             }
           >
             Import Custom Web App
@@ -130,10 +152,24 @@ const Developer: React.FC = () => {
           </span>
         )}
       </div>
+      <div className={styles.buttons}>
+        <button onClick={clearPlaylistImageCache}>
+          Clear Spotify Playlist Image Cache
+        </button>
+        {playlistImageCacheCleared && (
+          <span className={styles.successMessage}>
+            Playlist image cache cleared successfully, please restart
+            GlanceThing!
+          </span>
+        )}
+      </div>
 
       <h2>Links</h2>
       <div className={styles.buttons}>
         <button onClick={() => navigate('/setup?step=3')}>Setup</button>
+        <button onClick={() => window.api.openDevTools()}>
+          Open DevTools
+        </button>
       </div>
     </div>
   )

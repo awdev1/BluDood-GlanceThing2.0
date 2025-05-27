@@ -42,7 +42,16 @@ const storageValueHandlers: Record<string, (value: unknown) => void> = {
   showTempUnit: notifyClientsOfSettingChanges,
   autoSwitchToLyrics: notifyClientsOfSettingChanges,
   showTimeInStatusBar: notifyClientsOfSettingChanges,
-  showWeatherInStatusBar: notifyClientsOfSettingChanges
+  showWeatherInStatusBar: notifyClientsOfSettingChanges,
+  showHighLowTemp: notifyClientsOfSettingChanges,
+  showWeatherDescription: notifyClientsOfSettingChanges,
+  showWeatherIcon: notifyClientsOfSettingChanges,
+  showHumidity: notifyClientsOfSettingChanges,
+  showHighLowTempStatusBar: notifyClientsOfSettingChanges,
+  showWeatherDescriptionStatusBar: notifyClientsOfSettingChanges,
+  showWeatherIconStatusBar: notifyClientsOfSettingChanges,
+  showHumidityStatusBar: notifyClientsOfSettingChanges,
+  playbackSyncTime: notifyClientsOfSettingChanges
 }
 
 function getStoragePath() {

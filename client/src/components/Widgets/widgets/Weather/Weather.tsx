@@ -15,7 +15,11 @@ const Weather: React.FC<WeatherProps> = ({ visible }) => {
     weatherError: error,
     weatherEmoji,
     weatherDescription,
-    temperatureUnit
+    showTempUnit,
+    showHighLowTemp,
+    showWeatherDescription,
+    showWeatherIcon,
+    showHumidity
   } = useContext(AppStateContext)
 
   return (
@@ -25,20 +29,31 @@ const Weather: React.FC<WeatherProps> = ({ visible }) => {
           <div className={styles.location}>{weather.location}</div>
           <div className={styles.row}>
             <div className={styles.temp}>
-              {weather.temperature}°{temperatureUnit}
+              {weather.temperature}
+              {showTempUnit ? weather.temperatureUnit : '°'}
             </div>
-            <div className={styles.icon}>{weatherEmoji}</div>
+            {showWeatherIcon && (
+              <div className={styles.icon}>{weatherEmoji}</div>
+            )}
           </div>
-          <div className={styles.description}>{weatherDescription}</div>
-          <div className={styles.condition}>
-            <span>💧{weather.humidity}%</span>
-            <span>
-              📈{weather.maxTemperature}°{temperatureUnit}
-            </span>
-            <span>
-              📉{weather.minTemperature}°{temperatureUnit}
-            </span>
-          </div>
+          {showWeatherDescription && (
+            <div className={styles.description}>{weatherDescription}</div>
+          )}
+          {(showHumidity || showHighLowTemp) && (
+            <div className={styles.condition}>
+              {showHumidity && <span>💧{weather.humidity}%</span>}
+              {showHighLowTemp && (
+                <div className={styles.tempMinMax}>
+                  <span className={styles.tempMax}>
+                    ↑{weather.maxTemperature}°
+                  </span>
+                  <span className={styles.tempMin}>
+                    ↓{weather.minTemperature}°
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       ) : error ? (
         <div className={styles.error}>

@@ -327,6 +327,67 @@ const CoordinatesInputSetting: React.FC<{
   )
 }
 
+const InputSetting: React.FC<{
+  label: string
+  description?: string
+  defaultValue?: string | number
+  value?: string | number
+  submitLabel?: string
+  placeholder?: string
+  min?: number
+  max?: number
+  step?: number
+  onChange?: (value: string | number) => void
+  onSubmit?: (value: string | number) => void
+  disabled?: boolean
+}> = ({
+  label,
+  description,
+  defaultValue,
+  value,
+  submitLabel,
+  placeholder,
+  min,
+  max,
+  step,
+  onChange,
+  onSubmit,
+  disabled
+}) => {
+  const input = useRef<HTMLInputElement>(null)
+
+  return (
+    <div className={styles.coordinatesInput}>
+      <div className={styles.text}>
+        <p className={styles.label}>{label}</p>
+        <p className={styles.description}>{description}</p>
+      </div>
+      <div className={styles.form}>
+        <input
+          type="text"
+          defaultValue={defaultValue}
+          value={value}
+          disabled={disabled}
+          onChange={onChange ? e => onChange(e.target.value) : undefined}
+          ref={input}
+          min={min}
+          max={max}
+          step={step}
+          placeholder={placeholder || ''}
+        />
+        {onSubmit && (
+          <button
+            disabled={disabled}
+            onClick={() => onSubmit(input?.current!.value)}
+          >
+            {submitLabel || 'Submit'}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 const GeneralTab: React.FC = () => {
   const navigate = useNavigate()
   const [loaded, setLoaded] = useState(false)
@@ -394,6 +455,7 @@ const ClientTab: React.FC = () => {
     autoSwitchToLyrics?: boolean
     showTimeInStatusBar?: boolean
     showWeatherInStatusBar?: boolean
+    playbackSyncTime?: number
   }>({})
 
   const [autoBrightness, setAutoBrightness] = useState(false)
@@ -452,7 +514,10 @@ const ClientTab: React.FC = () => {
             true) === true,
         showWeatherInStatusBar:
           ((await window.api.getStorageValue('showWeatherInStatusBar')) ??
-            true) === true
+            true) === true,
+        playbackSyncTime: ((await window.api.getStorageValue(
+          'playbackSyncTime'
+        )) ?? 10) as number
       }
       setAutoBrightness(settings.current.autoBrightness ?? false)
       setSleepMethod(settings.current.sleepMethod ?? 'sleep')
@@ -746,6 +811,18 @@ const ClientTab: React.FC = () => {
             )}
           </div>
         )}
+        <h3>Playback</h3>
+        <InputSetting
+          label="Playback Sync Time"
+          description="Time in seconds to wait before syncing playback with the server"
+          defaultValue={settings.current.playbackSyncTime ?? 5}
+          min={1}
+          max={60}
+          step={1}
+          onSubmit={value =>
+            window.api.setStorageValue('playbackSyncTime', value as number)
+          }
+        />
         {patches && isDev ? (
           <div className={styles.patches}>
             <h2>Patches</h2>
@@ -806,6 +883,14 @@ const WeatherTab: React.FC = () => {
     temperatureUnit?: string
     locationFormat?: string
     showTempUnit?: boolean
+    showHighLowTemp?: boolean
+    showWeatherDescription?: boolean
+    showWeatherIcon?: boolean
+    showHumidity?: boolean
+    showHighLowTempStatusBar?: boolean
+    showWeatherDescriptionStatusBar?: boolean
+    showWeatherIconStatusBar?: boolean
+    showHumidityStatusBar?: boolean
   }>({})
 
   useEffect(() => {
@@ -823,6 +908,31 @@ const WeatherTab: React.FC = () => {
         )) || 'locality-city') as string,
         showTempUnit: ((await window.api.getStorageValue(
           'showTempUnit'
+        )) ?? true) as boolean,
+        showHighLowTemp: ((await window.api.getStorageValue(
+          'showHighLowTemp'
+        )) ?? true) as boolean,
+        showWeatherDescription: ((await window.api.getStorageValue(
+          'showWeatherDescription'
+        )) ?? true) as boolean,
+        showWeatherIcon: ((await window.api.getStorageValue(
+          'showWeatherIcon'
+        )) ?? true) as boolean,
+        showHumidity: ((await window.api.getStorageValue(
+          'showHumidity'
+        )) ?? true) as boolean,
+        showHighLowTempStatusBar: ((await window.api.getStorageValue(
+          'showHighLowTempStatusBar'
+        )) ?? true) as boolean,
+        showWeatherDescriptionStatusBar:
+          ((await window.api.getStorageValue(
+            'showWeatherDescriptionStatusBar'
+          )) ?? true) as boolean,
+        showWeatherIconStatusBar: ((await window.api.getStorageValue(
+          'showWeatherIconStatusBar'
+        )) ?? true) as boolean,
+        showHumidityStatusBar: ((await window.api.getStorageValue(
+          'showHumidityStatusBar'
         )) ?? true) as boolean
       }
       setLoaded(true)
@@ -920,6 +1030,10 @@ const WeatherTab: React.FC = () => {
           submitLabel="Update"
           disabled={update}
         />
+        {update && <Loader />}
+        <div className={updateError ? styles.error : styles.success}>
+          {updateMessage}
+        </div>
         <SelectSetting
           label="Temperature Unit"
           description="Choose between Celsius and Fahrenheit for temperature display"
@@ -946,7 +1060,7 @@ const WeatherTab: React.FC = () => {
           description="Choose how location information is displayed"
           defaultValue={settings.current.locationFormat}
           options={[
-            { value: 'none', label: 'No dispaly' },
+            { value: 'none', label: 'No display' },
             { value: 'city', label: 'City' },
             { value: 'city-locality', label: 'City, Locality' },
             { value: 'locality', label: 'Locality' },
@@ -957,10 +1071,75 @@ const WeatherTab: React.FC = () => {
             window.api.updateWeather()
           }}
         />
-        {update && <Loader />}
-        <div className={updateError ? styles.error : styles.success}>
-          {updateMessage}
-        </div>
+        <ToggleSetting
+          label="Show weather description"
+          description="Display the current weather description (e.g., sunny, cloudy) on the weather widget"
+          defaultValue={settings.current.showWeatherDescription ?? true}
+          onChange={value => {
+            window.api.setStorageValue('showWeatherDescription', value)
+          }}
+        />
+        <ToggleSetting
+          label="Show weather icon"
+          description="Display the current weather icon on the weather widget"
+          defaultValue={settings.current.showWeatherIcon ?? true}
+          onChange={value => {
+            window.api.setStorageValue('showWeatherIcon', value)
+          }}
+        />
+        <ToggleSetting
+          label="Show High/Low Temperatures"
+          description="Display the high and low temperatures for the day on the weather widget"
+          defaultValue={settings.current.showHighLowTemp ?? true}
+          onChange={value => {
+            window.api.setStorageValue('showHighLowTemp', value)
+          }}
+        />
+        <ToggleSetting
+          label="Show Humidity"
+          description="Display the current humidity level on the weather widget"
+          defaultValue={settings.current.showHumidity ?? true}
+          onChange={value => {
+            window.api.setStorageValue('showHumidity', value)
+          }}
+        />
+        <ToggleSetting
+          label="Show Weather Description in Status Bar"
+          description="Display the current weather description in the status bar"
+          defaultValue={
+            settings.current.showWeatherDescriptionStatusBar ?? true
+          }
+          onChange={value => {
+            window.api.setStorageValue(
+              'showWeatherDescriptionStatusBar',
+              value
+            )
+          }}
+        />
+        <ToggleSetting
+          label="Show Weather Icon in Status Bar"
+          description="Display the current weather icon in the status bar"
+          defaultValue={settings.current.showWeatherIconStatusBar ?? true}
+          onChange={value => {
+            window.api.setStorageValue('showWeatherIconStatusBar', value)
+          }}
+        />
+        <ToggleSetting
+          label="Show Humidity in Status Bar"
+          description="Display the current humidity level in the status bar"
+          defaultValue={settings.current.showHumidityStatusBar ?? true}
+          onChange={value => {
+            window.api.setStorageValue('showHumidityStatusBar', value)
+          }}
+        />
+        <ToggleSetting
+          label="Show High/Low Temperatures in Status Bar"
+          description="Display the high and low temperatures for the day in the status bar"
+          defaultValue={settings.current.showHighLowTempStatusBar ?? true}
+          onChange={value => {
+            window.api.setStorageValue('showHighLowTempStatusBar', value)
+          }}
+        />
       </div>
     )
   )

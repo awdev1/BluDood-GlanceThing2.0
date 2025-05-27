@@ -18,7 +18,16 @@ export function getClientSettings() {
     'showTempUnit',
     'autoSwitchToLyrics',
     'showTimeInStatusBar',
-    'showWeatherInStatusBar'
+    'showWeatherInStatusBar',
+    'showHighLowTemp',
+    'showWeatherDescription',
+    'showWeatherIcon',
+    'showHumidity',
+    'showHighLowTempStatusBar',
+    'showWeatherDescriptionStatusBar',
+    'showWeatherIconStatusBar',
+    'showHumidityStatusBar',
+    'playbackSyncTime'
   ]
   const clientSettings = {}
   clientKeys.forEach(key => {

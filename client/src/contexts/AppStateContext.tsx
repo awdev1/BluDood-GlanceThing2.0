@@ -38,6 +38,15 @@ interface AppSettings {
   autoSwitchToLyrics: boolean
   showTimeInStatusBar: boolean
   showWeatherInStatusBar: boolean
+  showHighLowTemp: boolean
+  showWeatherDescription: boolean
+  showWeatherIcon: boolean
+  showHumidity: boolean
+  showHighLowTempStatusBar: boolean
+  showWeatherDescriptionStatusBar: boolean
+  showWeatherIconStatusBar: boolean
+  showHumidityStatusBar: boolean
+  playbackSyncTime: number
 }
 
 interface AppStateContextProps extends AppSettings {
@@ -48,7 +57,6 @@ interface AppStateContextProps extends AppSettings {
   weatherError: boolean
   weatherEmoji: string
   weatherDescription: string
-  temperatureUnit: string
   setSettings: (settings: Partial<AppSettings>) => void
   playerShown: boolean
   setPlayerShown: (shown: boolean) => void
@@ -71,7 +79,16 @@ const defaultSettings: AppSettings = {
   showTempUnit: true,
   autoSwitchToLyrics: false,
   showTimeInStatusBar: true,
-  showWeatherInStatusBar: true
+  showWeatherInStatusBar: true,
+  showHighLowTemp: true,
+  showWeatherDescription: true,
+  showWeatherIcon: true,
+  showHumidity: true,
+  showHighLowTempStatusBar: true,
+  showWeatherDescriptionStatusBar: true,
+  showWeatherIconStatusBar: true,
+  showHumidityStatusBar: true,
+  playbackSyncTime: 5
 }
 
 const AppStateContext = createContext<AppStateContextProps>({
@@ -84,7 +101,6 @@ const AppStateContext = createContext<AppStateContextProps>({
   weatherError: false,
   weatherEmoji: '',
   weatherDescription: '',
-  temperatureUnit: '',
   playerShown: false,
   setPlayerShown: () => {},
   playlistsShown: false,
@@ -114,7 +130,6 @@ const AppStateContextProvider = ({
   const [weather, setWeather] = useState<WeatherData | null>(null)
   const [weatherEmoji, setWeatherEmoji] = useState<string>('')
   const [weatherDescription, setWeatherDescription] = useState<string>('')
-  const [temperatureUnit, setTemperatureUnit] = useState<string>('')
   const [weatherLoading, setWeatherLoading] = useState<boolean>(true)
   const [weatherError, setWeatherError] = useState<boolean>(false)
 
@@ -173,50 +188,40 @@ const AppStateContextProvider = ({
     }
   }, [settings.timeFormat, settings.dateFormat])
 
-  const handleSocketMessage = useCallback(
-    (e: MessageEvent) => {
-      try {
-        const { type, data } = JSON.parse(e.data)
+  const handleSocketMessage = useCallback((e: MessageEvent) => {
+    try {
+      const { type, data } = JSON.parse(e.data)
 
-        switch (type) {
-          case 'setting':
-            if (data) {
-              setSettingsState(prev => ({
-                ...prev,
-                ...data
-              }))
-            }
-            break
+      switch (type) {
+        case 'setting':
+          if (data) {
+            setSettingsState(prev => ({
+              ...prev,
+              ...data
+            }))
+          }
+          break
 
-          case 'time':
-            setTimeDate(data.time, data.date)
-            lastServerTime.current = new Date(data.dateTime)
-            lastConnectionTime.current = performance.now()
-            break
+        case 'time':
+          setTimeDate(data.time, data.date)
+          lastServerTime.current = new Date(data.dateTime)
+          lastConnectionTime.current = performance.now()
+          break
 
-          case 'weather':
-            setWeatherLoading(false)
-            if (data) {
-              setWeather(data)
-              setWeatherEmoji(getWeatherEmoji(data.weatherCode))
-              setWeatherDescription(
-                getWeatherDescription(data.weatherCode)
-              )
-              if (settings.showTempUnit) {
-                setTemperatureUnit(
-                  data.temperatureUnit === 'fahrenheit' ? 'F' : 'C'
-                )
-              }
-              setWeatherError(false)
-            }
-            break
-        }
-      } catch (error) {
-        console.error('Error processing server message:', error)
+        case 'weather':
+          setWeatherLoading(false)
+          if (data) {
+            setWeather(data)
+            setWeatherEmoji(getWeatherEmoji(data.weatherCode))
+            setWeatherDescription(getWeatherDescription(data.weatherCode))
+            setWeatherError(false)
+          }
+          break
       }
-    },
-    [settings.showTempUnit]
-  )
+    } catch (error) {
+      console.error('Error processing server message:', error)
+    }
+  }, [])
 
   useEffect(() => {
     if (ready && socket) {
@@ -267,7 +272,6 @@ const AppStateContextProvider = ({
     weatherError,
     weatherEmoji,
     weatherDescription,
-    temperatureUnit,
     playerShown,
     setPlayerShown,
     playlistsShown,

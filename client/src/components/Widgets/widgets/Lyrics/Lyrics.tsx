@@ -52,12 +52,7 @@ const Lyrics: React.FC<LyricsProps> = ({ visible, sectionActive }) => {
   }, [])
 
   const scrollToActiveLine = useCallback(() => {
-    if (
-      !visible ||
-      !sectionActive ||
-      !activeLineRef.current ||
-      !lyricsContentRef.current
-    )
+    if (!visible || !activeLineRef.current || !lyricsContentRef.current)
       return
     const lyricsContainer = lyricsContentRef.current
     const activeLine = activeLineRef.current
@@ -73,7 +68,7 @@ const Lyrics: React.FC<LyricsProps> = ({ visible, sectionActive }) => {
         })
       }
     })
-  }, [visible, sectionActive])
+  }, [visible])
 
   useEffect(() => {
     if (visible && sectionActive && syncLyric) {
@@ -173,12 +168,7 @@ const Lyrics: React.FC<LyricsProps> = ({ visible, sectionActive }) => {
   }, [lyricsData, setColors])
 
   const renderLyrics = () => {
-    if (
-      !visible ||
-      !sectionActive ||
-      !hasLyrics ||
-      !lyricsData?.lyrics?.lines
-    ) {
+    if (!visible || !hasLyrics || !lyricsData?.lyrics?.lines) {
       return <div className={styles.emptyLyrics}></div>
     }
 
@@ -194,7 +184,7 @@ const Lyrics: React.FC<LyricsProps> = ({ visible, sectionActive }) => {
             className={`${styles.line} ${index === currentLineIndex ? styles.activeLine : ''} ${index < currentLineIndex ? styles.passedLine : ''}`}
             ref={index === currentLineIndex ? activeLineRef : null}
           >
-            {line.words}
+            <div className={styles.lineContent}>{line.words}</div>
           </div>
         ))}
         <div
@@ -206,8 +196,8 @@ const Lyrics: React.FC<LyricsProps> = ({ visible, sectionActive }) => {
   }
 
   const renderContent = () => {
-    if (!sectionActive) {
-      return <div className={styles.loading}>Lyrics ready</div>
+    if (!visible) {
+      return null
     }
 
     if (error) {

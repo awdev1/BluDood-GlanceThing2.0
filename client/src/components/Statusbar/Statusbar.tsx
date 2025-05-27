@@ -7,10 +7,15 @@ const Statusbar: React.FC = () => {
     time,
     date,
     weather,
+    weatherDescription,
     weatherEmoji,
-    temperatureUnit,
+    showTempUnit,
     showTimeInStatusBar,
-    showWeatherInStatusBar
+    showWeatherInStatusBar,
+    showHighLowTempStatusBar,
+    showWeatherDescriptionStatusBar,
+    showWeatherIconStatusBar,
+    showHumidityStatusBar
   } = useContext(AppStateContext)
 
   return (
@@ -23,18 +28,31 @@ const Statusbar: React.FC = () => {
       )}
       {showWeatherInStatusBar && weather && (
         <div className={styles.weather}>
-          <div className={styles.weatherIcon}>{weatherEmoji}</div>
+          {showWeatherDescriptionStatusBar && (
+            <div className={styles.weatherDescription}>
+              {weatherDescription}
+            </div>
+          )}
+          {showWeatherIconStatusBar && (
+            <div className={styles.weatherIcon}>{weatherEmoji}</div>
+          )}
           <div className={styles.temperature}>
-            {weather.temperature}°{temperatureUnit}
+            {weather.temperature}
+            {showTempUnit ? weather.temperatureUnit : '°'}
           </div>
-          <div className={styles.minMax}>
-            <span className={styles.tempMax}>
-              ↑{weather.maxTemperature}°
-            </span>
-            <span className={styles.tempMin}>
-              ↓{weather.minTemperature}°
-            </span>
-          </div>
+          {showHumidityStatusBar && (
+            <div className={styles.humidity}>💧{weather.humidity}%</div>
+          )}
+          {showHighLowTempStatusBar && (
+            <div className={styles.tempMinMax}>
+              <span className={styles.tempMax}>
+                ↑{weather.maxTemperature}°
+              </span>
+              <span className={styles.tempMin}>
+                ↓{weather.minTemperature}°
+              </span>
+            </div>
+          )}
         </div>
       )}
       {!showTimeInStatusBar && !showWeatherInStatusBar && (

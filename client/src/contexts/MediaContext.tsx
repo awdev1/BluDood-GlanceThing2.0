@@ -120,7 +120,8 @@ interface MediaContextProviderProps {
 
 const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
   const { ready, socket } = useContext(SocketContext)
-  const { showLyricsWidget } = useContext(AppStateContext)
+  const { showLyricsWidget, playbackSyncTime } =
+    useContext(AppStateContext)
   const socketRef = useRef<WebSocket | null>(null)
 
   const [playerData, setPlayerData] = useState<PlaybackData | null>(null)
@@ -355,15 +356,18 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
     socketRef.current = socket
     if (ready === true && socket) {
       socket.addEventListener('message', handleSocketMessage)
-      const refreshInterval = setInterval(() => {
-        if (socket && socket.readyState === WebSocket.OPEN) {
-          socket.send(
-            JSON.stringify({
-              type: 'playback'
-            })
-          )
-        }
-      }, 10000)
+      const refreshInterval = setInterval(
+        () => {
+          if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(
+              JSON.stringify({
+                type: 'playback'
+              })
+            )
+          }
+        },
+        playbackSyncTime ? playbackSyncTime * 1000 : 5000
+      )
       return () => {
         socket.removeEventListener('message', handleSocketMessage)
         clearInterval(refreshInterval)
@@ -372,7 +376,7 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
     return () => {
       socketRef.current = null
     }
-  }, [ready, socket, handleSocketMessage])
+  }, [ready, socket, handleSocketMessage, playbackSyncTime])
 
   useEffect(() => {
     if (socket && socket.readyState === WebSocket.OPEN) {

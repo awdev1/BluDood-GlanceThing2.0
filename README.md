@@ -1,4 +1,3 @@
-
 # GlanceThing
 
 Your CarThing as a glanceable action pad!

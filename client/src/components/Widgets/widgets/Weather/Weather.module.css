@@ -42,6 +42,22 @@
 .condition {
   font-size: 1.2rem;
   opacity: 0.8;
+  display: flex;
+  gap: 6px;
+}
+
+.tempMinMax {
+  display: flex;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.tempMin {
+  color: #88c0ff;
+}
+
+.tempMax {
+  color: #ff9e7d;
 }
 
 .loading {

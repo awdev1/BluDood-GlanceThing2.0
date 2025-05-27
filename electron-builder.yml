@@ -1,7 +1,7 @@
 appId: com.bludood.glancething
 productName: GlanceThing
 directories:
-  buildResources: build
+  buildResources: build/stable
 files:
   - '!**/.vscode/*'
   - '!src/*'
@@ -10,7 +10,8 @@ files:
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
 asarUnpack:
-  - resources/**
+  - resources/common/**
+  - resources/stable/**
 win:
   executableName: GlanceThing
 nsis:

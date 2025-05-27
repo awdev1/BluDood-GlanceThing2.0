@@ -5,16 +5,18 @@ import { BasePlaybackHandler } from './BasePlaybackHandler.js'
 
 import spotify from './spotify.js'
 import spotifyfree from './spotifyfree.js'
+import native from './native.js'
 import {
   PlaybackData,
   PlaybackHandlerEvents,
   RepeatMode,
   LyricsResponse
 } from '../../types/Playback.js'
+
 import { log } from '../utils.js'
 import { getPlaybackHandlerConfig, setStorageValue } from '../storage.js'
 
-const handlers: BasePlaybackHandler[] = [spotify,spotifyfree]
+const handlers: BasePlaybackHandler[] = [spotify, spotifyfree, native]
 
 class PlaybackManager extends (EventEmitter as new () => TypedEmitter<PlaybackHandlerEvents>) {
   private currentHandler: BasePlaybackHandler | null = null
@@ -33,8 +35,11 @@ class PlaybackManager extends (EventEmitter as new () => TypedEmitter<PlaybackHa
 
     const handler = this.getHandler(handlerName)
     const config = await getPlaybackHandlerConfig(handlerName)
-    if (!config) {
-      this.emit('error', new Error('No config found for handler'))
+    if (!handler.validateConfig(config)) {
+      this.emit(
+        'error',
+        new Error(`Invalid config for handler ${handlerName}`)
+      )
       return setStorageValue('playbackHandler', 'none')
     }
 
@@ -80,9 +85,9 @@ class PlaybackManager extends (EventEmitter as new () => TypedEmitter<PlaybackHa
     return this.currentHandler.pause()
   }
 
-  async setVolume(volume: number): Promise<void> {
+  async setVolume(volume: number, deviceId?: string): Promise<void> {
     if (!this.currentHandler) return
-    return this.currentHandler.setVolume(volume)
+    return this.currentHandler.setVolume(volume, deviceId)
   }
 
   async next(): Promise<void> {
@@ -110,9 +115,83 @@ class PlaybackManager extends (EventEmitter as new () => TypedEmitter<PlaybackHa
     return this.currentHandler.getImage()
   }
 
-  async getLyrics(): Promise<LyricsResponse | null> {
+  async getLyrics(): Promise<LyricsResponse | unknown | null> {
     if (!this.currentHandler) return null
     return this.currentHandler.getLyrics()
+  }
+
+  async playlists(offset: number): Promise<unknown> {
+    if (!this.currentHandler) return null
+    return this.currentHandler.playlists(offset)
+  }
+
+  async playlistTracks(
+    playlistId: string,
+    offset?: number,
+    limit?: number
+  ): Promise<unknown> {
+    if (!this.currentHandler) return null
+    return this.currentHandler.playlistTracks(playlistId, offset, limit)
+  }
+
+  async playPlaylist(playlistId: string): Promise<void> {
+    if (!this.currentHandler) return
+    return this.currentHandler.playPlaylist(playlistId)
+  }
+
+  async playTrack(
+    trackID: string,
+    contentType?: string,
+    contextId?: string,
+    shuffle?: boolean
+  ): Promise<unknown> {
+    if (!this.currentHandler) return null
+    return this.currentHandler.playTrack(
+      trackID,
+      contentType,
+      contextId,
+      shuffle
+    )
+  }
+
+  async albums(offset: number = 0, limit: number = 50): Promise<unknown> {
+    if (!this.currentHandler) return null
+    return this.currentHandler.albums(offset, limit)
+  }
+
+  async albumTracks(
+    albumId: string,
+    offset?: number,
+    limit?: number
+  ): Promise<unknown> {
+    if (!this.currentHandler) return null
+    return this.currentHandler.albumTracks(albumId, offset, limit)
+  }
+
+  async playAlbum(albumId: string): Promise<unknown> {
+    if (!this.currentHandler) return null
+    return this.currentHandler.playAlbum(albumId)
+  }
+
+  async likedSongs(
+    offset: number = 0,
+    limit: number = 50
+  ): Promise<unknown> {
+    if (!this.currentHandler) return null
+    return this.currentHandler.likedSongs(offset, limit)
+  }
+
+  async devices(): Promise<unknown> {
+    if (!this.currentHandler) return null
+    return this.currentHandler.devices()
+  }
+
+  async transferPlayback(
+    deviceId: string,
+    play: boolean = true
+  ): Promise<unknown> {
+    if (!this.currentHandler) return null
+    return this.currentHandler.transferPlayback(deviceId, play)
   }
 }
 

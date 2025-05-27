@@ -122,6 +122,12 @@ export async function importCustomWebApp() {
     throw new Error('extract_failed')
   }
 
+  if (!fs.existsSync(path.join(clientFolder, 'index.html'))) {
+    fs.rmSync(clientFolder, { recursive: true })
+    log('Invalid custom client uploaded', 'Client Webapp', LogLevel.ERROR)
+    throw new Error('invalid_custom_client')
+  }
+
   log('Extracted custom client', 'Client Webapp')
 
   return true

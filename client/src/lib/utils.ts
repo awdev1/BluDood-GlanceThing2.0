@@ -31,7 +31,9 @@ export function formatTime(ms: number) {
   return `${remainingMinutes}:${remainingSeconds.toString().padStart(2, '0')}`
 }
 
-export const debouncedFunction = <T extends (...args: any[]) => void>(
+export const debounce = <
+  T extends (...args: Parameters<T>) => ReturnType<T>
+>(
   callback: T,
   delay: number
 ) => {

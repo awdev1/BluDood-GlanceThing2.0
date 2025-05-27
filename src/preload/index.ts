@@ -1,5 +1,3 @@
-import '@electron-toolkit/preload'
-
 import { contextBridge, ipcRenderer } from 'electron'
 
 interface Shortcut {
@@ -116,6 +114,8 @@ const api = {
     ipcRenderer.invoke(IPCHandler.UploadScreensaverImage),
   removeScreensaverImage: () =>
     ipcRenderer.invoke(IPCHandler.RemoveScreensaverImage),
+  openDevTools: () => ipcRenderer.invoke('openDevTools'),
+  getChannel: () => ipcRenderer.invoke('getChannel'),
   updateWeather: () => ipcRenderer.invoke(IPCHandler.UpdateWeather)
 }
 
@@ -129,6 +129,6 @@ if (process.contextIsolated) {
     console.error(error)
   }
 } else {
-  // @ts-ignore (define in dts)
+  // @ts-expect-error (define in dts)
   window.api = api
 }

@@ -14,7 +14,7 @@ import styles from './FullescreenPlayer.module.css'
 
 interface FullescreenPlayerProps {
   shown: boolean
-  setShown: React.Dispatch<React.SetStateAction<boolean>>
+  setShown: (shown: boolean) => void
 }
 
 const FullescreenPlayer: React.FC<FullescreenPlayerProps> = ({
@@ -130,9 +130,11 @@ const FullescreenPlayer: React.FC<FullescreenPlayerProps> = ({
       >
         <span className="material-icons">keyboard_arrow_down</span>
       </button>
-      {playerData ? (
+      {playerData && playerData.track ? (
         <>
-          <img src={image} alt="" className={styles.background} />
+          {image && (
+            <img src={image} alt="" className={styles.background} />
+          )}
           <div className={styles.track}>
             <div className={styles.cover}>
               {image ? (

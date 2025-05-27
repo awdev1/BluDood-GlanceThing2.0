@@ -33,7 +33,7 @@ export async function uploadScreensaverImage() {
     return {
       success: false,
       error: 'file_read_error',
-      message: 'Could not read the selected file.'
+      message: `Could not read the selected file. ${error}`
     }
   }
 
@@ -55,7 +55,7 @@ export async function uploadScreensaverImage() {
     return {
       success: false,
       error: 'save_error',
-      message: 'Could not save the image file.'
+      message: `Could not save the image file. ${error}`
     }
   }
 }

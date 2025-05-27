@@ -20,7 +20,7 @@
 }
 
 .control:focus {
-  border-color: rgba(0, 100, 255, 0.5);
+  border-color: var(--color-primary);
 }
 
 .control span {
@@ -38,7 +38,53 @@
   background: rgb(50, 50, 255);
 }
 
+.control[data-type='devices'] span {
+  background: rgb(29, 185, 84); /* Spotify green */
+}
+
 .control p {
   margin-top: 5px;
   font-size: 0.8em;
+}
+
+.modalOverlay {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 15px;
+  animation: modalFadeIn 0.2s ease-out;
+  overflow: hidden;
+  flex: 1;
+  border-radius: 20px;
+  background: #111;
+  border: 2px solid transparent;
+  outline: none;
+  transition: 200ms ease;
+  max-height: 100%;
+  margin: 5px;
+  height: calc(100% - 10px);
+  width: calc(100% - 10px);
+}
+
+.modalContent {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+  overflow-y: scroll;
+  height: 100%;
+  width: 100%;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }

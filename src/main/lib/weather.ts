@@ -67,7 +67,7 @@ export async function fetchWeather(
   const params = new URLSearchParams()
   params.append(
     'current',
-    'temperature_2m,weather_code,relative_humidity_2m,'
+    'temperature_2m,weather_code,relative_humidity_2m'
   )
   params.append('forecast_days', '1')
   params.append('daily', 'temperature_2m_max,temperature_2m_min')
@@ -106,109 +106,109 @@ export async function fetchWeather(
 }
 
 export async function updateWeather(): Promise<boolean> {
-    if (!wss) return false
+  if (!wss) return false
 
-    try {
-        log('Update Weather', 'weather', LogLevel.DEBUG)
-        let latitude = getStorageValue('latitude') as number | null
-        let longitude = getStorageValue('longitude') as number | null
-        let temperatureUnit = (getStorageValue('temperatureUnit') as string) || 'fahrenheit'
+  try {
+    log('Update Weather', 'weather', LogLevel.DEBUG)
+    let latitude = getStorageValue('latitude') as number | null
+    let longitude = getStorageValue('longitude') as number | null
+    const temperatureUnit =
+      (getStorageValue('temperatureUnit') as string) || 'celsius'
+    const locationFormat =
+      (getStorageValue('locationFormat') as string) || 'locality-city'
 
-        // Validate temperatureUnit
-        temperatureUnit = temperatureUnit.toLowerCase() === 'fahrenheit' ? 'fahrenheit' : 'celsius'
-        const locationFormat = (getStorageValue('locationFormat') as string) || 'locality-city'
+    const hasValidCoordinates =
+      typeof latitude === 'number' &&
+      !isNaN(latitude) &&
+      typeof longitude === 'number' &&
+      !isNaN(longitude) &&
+      latitude >= -90 &&
+      latitude <= 90 &&
+      longitude >= -180 &&
+      longitude <= 180
 
-        const hasValidCoordinates =
-            typeof latitude === 'number' &&
-            !isNaN(latitude) &&
-            typeof longitude === 'number' &&
-            !isNaN(longitude) &&
-            latitude >= -90 &&
-            latitude <= 90 &&
-            longitude >= -180 &&
-            longitude <= 180
+    if (!hasValidCoordinates) {
+      log(
+        'Coordinates not provided - using IP geolocation',
+        'Weather',
+        LogLevel.DEBUG
+      )
+      const ipGeolocation = await fetchGeolocation()
 
-        if (!hasValidCoordinates) {
-            log(
-                'Coordinates not provided - using IP geolocation',
-                'Weather',
-                LogLevel.DEBUG
-            )
-            const ipGeolocation = await fetchGeolocation()
-
-            if (
-                !ipGeolocation ||
-                typeof ipGeolocation.latitude !== 'number' ||
-                typeof ipGeolocation.longitude !== 'number'
-            ) {
-                throw new Error(
-                    'Could not obtain valid coordinates for weather update'
-                )
-            }
-            latitude = ipGeolocation.latitude
-            longitude = ipGeolocation.longitude
-        }
-        if (
-            typeof latitude !== 'number' ||
-            typeof longitude !== 'number' ||
-            isNaN(latitude) ||
-            isNaN(longitude)
-        ) {
-            throw new Error(
-                'Could not obtain valid coordinates for weather update'
-            )
-        }
-
-        const data = await fetchWeather(latitude, longitude, temperatureUnit)
-        if (!data) {
-            throw new Error('Failed to fetch weather data')
-        }
-
-        const geolocation = await fetchGeolocation(latitude, longitude)
-        let location = ''
-        if (geolocation) {
-            switch (locationFormat) {
-                case 'city':
-                    location = geolocation.city ?? ''
-                    break
-                case 'locality':
-                    location = geolocation.locality ?? ''
-                    break
-                case 'city-locality':
-                    location =
-                        geolocation.city && geolocation.locality
-                            ? `${geolocation.city}, ${geolocation.locality}`
-                            : ''
-                    break
-                case 'locality-city':
-                    location =
-                        geolocation.city && geolocation.locality
-                            ? `${geolocation.locality}, ${geolocation.city}`
-                            : ''
-                    default:
-                        break
-            }
-        }
-        data.location = location
-        log(`Weather data:${JSON.stringify(data)}`, 'Weather', LogLevel.DEBUG)
-        const message = JSON.stringify({
-            type: 'weather',
-            data
-        })
-
-        wss.clients.forEach((ws: AuthenticatedWebSocket) => {
-            if (ws.authenticated && ws.readyState === 1) {
-                ws.send(message)
-            }
-        })
-
-        return true
-    } catch (error) {
-        log(
-            `Fetch weather data error:${JSON.stringify(error)}`,
-            'Weather',
-            LogLevel.ERROR
+      if (
+        !ipGeolocation ||
+        typeof ipGeolocation.latitude !== 'number' ||
+        typeof ipGeolocation.longitude !== 'number'
+      ) {
+        throw new Error(
+          'Could not obtain valid coordinates for weather update'
         )
-        return false
+      }
+      latitude = ipGeolocation.latitude
+      longitude = ipGeolocation.longitude
     }
+    if (
+      typeof latitude !== 'number' ||
+      typeof longitude !== 'number' ||
+      isNaN(latitude) ||
+      isNaN(longitude)
+    ) {
+      throw new Error(
+        'Could not obtain valid coordinates for weather update'
+      )
+    }
+
+    const data = await fetchWeather(latitude, longitude, temperatureUnit)
+    if (!data) {
+      throw new Error('Failed to fetch weather data')
+    }
+
+    const geolocation = await fetchGeolocation(latitude, longitude)
+    let location = ''
+    if (geolocation) {
+      switch (locationFormat) {
+        case 'city':
+          location = geolocation.city ?? ''
+          break
+        case 'locality':
+          location = geolocation.locality ?? ''
+          break
+        case 'city-locality':
+          location =
+            geolocation.city && geolocation.locality
+              ? `${geolocation.city}, ${geolocation.locality}`
+              : ''
+          break
+        case 'locality-city':
+          location =
+            geolocation.city && geolocation.locality
+              ? `${geolocation.locality}, ${geolocation.city}`
+              : ''
+          break
+        default:
+          break
+      }
+    }
+    data.location = location
+    log(`Weather data:${JSON.stringify(data)}`, 'Weather', LogLevel.DEBUG)
+    const message = JSON.stringify({
+      type: 'weather',
+      data
+    })
+
+    wss.clients.forEach((ws: AuthenticatedWebSocket) => {
+      if (ws.authenticated && ws.readyState === 1) {
+        ws.send(message)
+      }
+    })
+
+    return true
+  } catch (error) {
+    log(
+      `Fetch weather data error:${JSON.stringify(error)}`,
+      'Weather',
+      LogLevel.ERROR
+    )
+    return false
+  }
 }

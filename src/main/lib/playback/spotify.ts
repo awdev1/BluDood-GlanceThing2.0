@@ -3,55 +3,39 @@ import { TOTP } from 'totp-generator'
 import { WebSocket } from 'ws'
 
 import { BasePlaybackHandler } from './BasePlaybackHandler.js'
-import { log, LogLevel, intToRgb } from '../utils.js'
+import {
+  log,
+  LogLevel,
+  base32FromBytes,
+  cleanBuffer,
+  intToRgb
+} from '../utils.js'
 
-import { Action, PlaybackData, RepeatMode } from '../../types/Playback.js'
-import { getStorageValue, setStorageValue } from '../storage.js'
+import {
+  Action,
+  PlaybackData,
+  RepeatMode,
+  LyricsResponse,
+  PlaybackResponse
+} from '../../types/Playback.js'
+import {
+  SpotifyDevice,
+  SpotifyCurrentPlayingResponse,
+  SpotifyTrackItem,
+  SpotifyEpisodeItem
+} from '../../types/spotifyResponse.js'
+import { Cache } from '../cache.js'
 
 async function subscribe(connection_id: string, token: string) {
   return await axios.put(
     'https://api.spotify.com/v1/me/notifications/player',
     null,
     {
-      params: {
-        connection_id
-      },
-      headers: {
-        Authorization: `Bearer ${token}`
-      },
+      params: { connection_id },
+      headers: { Authorization: `Bearer ${token}` },
       validateStatus: () => true
     }
   )
-}
-
-function base32FromBytes(bytes: Uint8Array, secretSauce: string): string {
-  let t = 0
-  let n = 0
-  let r = ''
-
-  for (let i = 0; i < bytes.length; i++) {
-    n = (n << 8) | bytes[i]
-    t += 8
-    while (t >= 5) {
-      r += secretSauce[(n >>> (t - 5)) & 31]
-      t -= 5
-    }
-  }
-
-  if (t > 0) {
-    r += secretSauce[(n << (5 - t)) & 31]
-  }
-
-  return r
-}
-
-function cleanBuffer(e: string): Uint8Array {
-  e = e.replace(' ', '')
-  const buffer = new Uint8Array(e.length / 2)
-  for (let i = 0; i < e.length; i += 2) {
-    buffer[i / 2] = parseInt(e.substring(i, i + 2), 16)
-  }
-  return buffer
 }
 
 async function generateTotp(): Promise<{
@@ -75,9 +59,7 @@ async function generateTotp(): Promise<{
   const res = await axios.get('https://open.spotify.com/server-time')
   const timestamp = res.data.serverTime * 1000
 
-  const totp = TOTP.generate(secret, {
-    timestamp
-  })
+  const totp = TOTP.generate(secret, { timestamp })
 
   return {
     otp: totp.otp,
@@ -108,7 +90,6 @@ export async function getWebToken(sp_dc: string) {
   )
 
   if (res.status !== 200) throw new Error('Invalid sp_dc')
-
   if (!res.data.accessToken) throw new Error('Invalid sp_dc')
 
   return res.data.accessToken
@@ -128,9 +109,7 @@ export async function refreshAccessToken(
         refresh_token: refreshToken
       },
       headers: {
-        Authorization: `Basic ${Buffer.from(
-          `${clientId}:${clientSecret}`
-        ).toString('base64')}`,
+        Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
         'Content-Type': 'application/x-www-form-urlencoded'
       },
       validateStatus: () => true
@@ -138,110 +117,7 @@ export async function refreshAccessToken(
   )
 
   if (res.status !== 200) return null
-
   return res.data.access_token
-}
-
-interface SpotifyTrackItem {
-  id: string
-  name: string
-  external_urls: {
-    spotify: string
-  }
-  artists: {
-    name: string
-    external_urls: {
-      spotify: string
-    }
-  }[]
-  album: {
-    name: string
-    href: string
-    images: {
-      url: string
-      width: number
-      height: number
-    }[]
-  }
-  duration_ms: number
-}
-
-interface SpotifyEpisodeItem {
-  id: string
-  name: string
-  external_urls: {
-    spotify: string
-  }
-  images: {
-    url: string
-    width: number
-    height: number
-  }[]
-  show: {
-    name: string
-    publisher: string
-    external_urls: {
-      spotify: string
-    }
-    href: string
-    images: {
-      url: string
-      width: number
-      height: number
-    }[]
-  }
-  duration_ms: number
-}
-
-export interface SpotifyCurrentPlayingResponse {
-  device: {
-    id: string
-    is_active: boolean
-    is_private_session: boolean
-    is_restricted: boolean
-    name: string
-    type: string
-    volume_percent: number
-    supports_volume: boolean
-  }
-  repeat_state: string
-  shuffle_state: boolean
-  context: {
-    external_urls: {
-      spotify: string
-    }
-    href: string
-    type: string
-    uri: string
-  }
-  timestamp: number
-  progress_ms: number
-  currently_playing_type: 'track' | 'episode'
-  is_playing: boolean
-  item: SpotifyTrackItem | SpotifyEpisodeItem
-}
-
-export interface LyricsResponse {
-  lyrics?: {
-    syncType: string
-    lines: {
-      startTimeMs: string
-      endTimeMs: string
-      words: string
-      syllables?: {
-        startTimeMs: string
-        endTimeMs: string
-        text: string
-      }[]
-    }
-  }
-  colors?: {
-    background: number
-    text: number
-    highlightText: number
-  }
-  hasVocalRemoval?: boolean
-  message?: string
 }
 
 const defaultSupportedActions: Action[] = [
@@ -258,6 +134,7 @@ export function filterData(
   const {
     is_playing,
     item,
+    context,
     progress_ms,
     currently_playing_type,
     device,
@@ -265,9 +142,7 @@ export function filterData(
     shuffle_state
   } = data
 
-  if (!item) {
-    return null
-  }
+  if (!item) return null
 
   const repeatStateMap: Record<string, RepeatMode> = {
     off: 'off',
@@ -284,6 +159,7 @@ export function filterData(
       shuffle: shuffle_state,
       volume: device.volume_percent,
       track: {
+        id: item.id,
         album: item.show.name,
         artists: [item.show.publisher],
         duration: {
@@ -291,6 +167,10 @@ export function filterData(
           total: item.duration_ms
         },
         name: item.name
+      },
+      context: {
+        uri: context?.uri,
+        type: context?.type
       },
       supportedActions: [
         ...defaultSupportedActions,
@@ -306,6 +186,7 @@ export function filterData(
       shuffle: shuffle_state,
       volume: device.volume_percent,
       track: {
+        id: item.id,
         album: item.album.name,
         artists: item.artists.map(a => a.name),
         duration: {
@@ -314,16 +195,23 @@ export function filterData(
         },
         name: item.name
       },
+      context: {
+        uri: context?.uri,
+        type: context?.type
+      },
       supportedActions: [
         ...defaultSupportedActions,
         'repeat',
         'shuffle',
+        'lyrics',
+        'playlists',
+        'devices',
         ...((device.supports_volume ? ['volume'] : []) as Action[])
       ]
     }
-  } else {
-    return null
   }
+
+  return null
 }
 
 interface SpotifyConfig {
@@ -341,33 +229,73 @@ class SpotifyHandler extends BasePlaybackHandler {
   webToken: string | null = null
   ws: WebSocket | null = null
   instance: AxiosInstance | null = null
-  lastPlayedData: PlaybackData | null = null
-  currentTrackId: string | null = null
 
-  lyricsCache: Map<string, { data: LyricsResponse; timestamp: number }> =
-    new Map()
-  lyricsCacheExpiration: number = 24 * 60 * 60 * 1000 // 24 hours
+  lyricsCache: Cache<LyricsResponse>
+  playlistImageCache: Cache<string>
   cacheCleanupInterval: NodeJS.Timeout | null = null
-  lyricsCacheStorageKey: string = 'spotify_lyrics_cache'
-  lastPlayedStorageKey: string = 'spotify_last_played'
+
+  constructor() {
+    super()
+    // 24 hours expiration for lyrics cache
+    this.lyricsCache = new Cache<LyricsResponse>(
+      24 * 60 * 60 * 1000,
+      'spotify_lyrics_cache',
+      'lyrics'
+    )
+
+    // 7 days expiration for playlist image cache
+    this.playlistImageCache = new Cache<string>(
+      7 * 24 * 60 * 60 * 1000,
+      'spotify_playlist_image_cache',
+      'playlist image'
+    )
+  }
+
+  // Utility function to fetch and cache images
+  private async fetchImage(
+    imageUrl: string,
+    cacheKey: string
+  ): Promise<string> {
+    const now = Date.now()
+    const cachedImage = this.playlistImageCache.get(cacheKey)
+
+    if (
+      cachedImage &&
+      now - cachedImage.timestamp < this.playlistImageCache.expirationAt()
+    ) {
+      return cachedImage.data
+    }
+
+    try {
+      const imageRes = await axios.get(imageUrl, {
+        responseType: 'arraybuffer'
+      })
+      const imageData = `data:image/jpeg;base64,${Buffer.from(imageRes.data).toString('base64')}`
+      this.playlistImageCache.set(cacheKey, imageData)
+      return imageData
+    } catch (error) {
+      log(`Error fetching image: ${error}`, 'Spotify', LogLevel.ERROR)
+      return ''
+    }
+  }
 
   async setup(config: SpotifyConfig): Promise<void> {
     log('Setting up', 'Spotify')
 
     this.config = config
 
-    // Load last played data from storage
-    try {
-      const storedLastPlayed = getStorageValue(this.lastPlayedStorageKey)
-      if (storedLastPlayed) {
-        this.lastPlayedData = storedLastPlayed
-        log('Loaded last played track from storage', 'Spotify', LogLevel.DEBUG)
-      }
-    } catch (error) {
-      log(`Error loading last played data: ${error}`, 'Spotify', LogLevel.WARN)
-    }
+    this.lyricsCache.load()
+    this.playlistImageCache.load()
+    this.cacheCleanupInterval = setInterval(
+      () => {
+        this.lyricsCache.clean()
+        this.lyricsCache.save()
+        this.playlistImageCache.clean()
+        this.playlistImageCache.save()
+      },
+      60 * 60 * 1000
+    )
 
-    // Initialize axios instance first
     this.instance = axios.create({
       baseURL: 'https://api.spotify.com/v1',
       validateStatus: () => true
@@ -397,7 +325,6 @@ class SpotifyHandler extends BasePlaybackHandler {
       return res
     })
 
-    // Get tokens
     if (this.config!.sp_dc) {
       this.webToken = await getWebToken(this.config!.sp_dc).catch(err => {
         log(`Error getting webToken: ${err}`, 'Spotify', LogLevel.WARN)
@@ -414,15 +341,6 @@ class SpotifyHandler extends BasePlaybackHandler {
       return null
     })
 
-    // Load lyrics cache after storage is initialized
-    try {
-      this.loadLyricsCache()
-    } catch (error) {
-      log(`Error loading lyrics cache: ${error}`, 'Spotify', LogLevel.WARN)
-      this.lyricsCache = new Map()
-    }
-
-    // Setup WebSocket if webToken is available
     if (this.webToken) {
       this.ws = new WebSocket(
         `wss://dealer.spotify.com/?access_token=${this.webToken}`
@@ -431,28 +349,10 @@ class SpotifyHandler extends BasePlaybackHandler {
     } else {
       this.emit('open', this.name)
     }
-
-    // Setup cache cleanup interval
-    this.cacheCleanupInterval = setInterval(
-      () => {
-        this.cleanLyricsCache()
-        this.saveLyricsCache()
-      },
-      60 * 60 * 1000
-    )
-
-    // Add app resume handler
-    if (process.platform === 'darwin') {
-      const { app } = require('electron')
-      app.on('activate', () => {
-        log('App activated, refreshing lyrics if needed', 'Spotify', LogLevel.DEBUG)
-        this.refreshLyricsIfNeeded()
-      })
-    }
   }
 
   async start() {
-    if (!this.ws) return
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return
     const ping = () => this.ws!.send('{"type":"ping"}')
 
     this.ws.on('open', () => {
@@ -497,25 +397,16 @@ class SpotifyHandler extends BasePlaybackHandler {
     })
 
     this.ws.on('close', () => this.emit('close'))
-
     this.ws.on('error', err => this.emit('error', err))
   }
 
   async cleanup(): Promise<void> {
     log('Cleaning up', 'Spotify')
 
-    // Save last played data before cleanup
-    try {
-      if (this.lastPlayedData) {
-        setStorageValue(this.lastPlayedStorageKey, this.lastPlayedData)
-        log('Saved last played track to storage during cleanup', 'Spotify', LogLevel.DEBUG)
-      }
-    } catch (error) {
-      log(`Error saving last played data during cleanup: ${error}`, 'Spotify', LogLevel.WARN)
-    }
-
-    this.saveLyricsCache()
+    this.lyricsCache.save()
     this.lyricsCache.clear()
+    this.playlistImageCache.save()
+    this.playlistImageCache.clear()
 
     if (this.cacheCleanupInterval) {
       clearInterval(this.cacheCleanupInterval)
@@ -527,80 +418,6 @@ class SpotifyHandler extends BasePlaybackHandler {
     this.ws.close()
     this.ws = null
     this.removeAllListeners()
-  }
-
-  cleanLyricsCache(): void {
-    const now = Date.now()
-    let expiredCount = 0
-
-    for (const [trackId, entry] of Array.from(this.lyricsCache.entries())) {
-      if (now - entry.timestamp > this.lyricsCacheExpiration) {
-        this.lyricsCache.delete(trackId)
-        expiredCount++
-      }
-    }
-
-    log(
-      `Cleaned lyrics cache. Removed ${expiredCount} expired entries. Current size: ${this.lyricsCache.size} entries`,
-      'Spotify',
-      LogLevel.DEBUG
-    )
-  }
-
-  saveLyricsCache(): void {
-    try {
-      const cacheEntries = Array.from(this.lyricsCache.entries())
-      setStorageValue(this.lyricsCacheStorageKey, cacheEntries)
-      log(
-        `Saved lyrics cache with ${cacheEntries.length} entries`,
-        'Spotify',
-        LogLevel.DEBUG
-      )
-    } catch (error) {
-      log(`Error saving lyrics cache: ${error}`, 'Spotify', LogLevel.ERROR)
-    }
-  }
-
-  loadLyricsCache(): void {
-    try {
-      const cachedData = getStorageValue(this.lyricsCacheStorageKey)
-      if (cachedData && Array.isArray(cachedData)) {
-        this.lyricsCache = new Map(cachedData)
-        log(
-          `Loaded lyrics cache with ${this.lyricsCache.size} entries`,
-          'Spotify',
-          LogLevel.DEBUG
-        )
-        this.cleanLyricsCache()
-      } else {
-        log(
-          `No lyrics cache found or invalid format`,
-          'Spotify',
-          LogLevel.DEBUG
-        )
-      }
-    } catch (error) {
-      log(
-        `Error loading lyrics cache: ${error}`,
-        'Spotify',
-        LogLevel.ERROR
-      )
-      this.lyricsCache = new Map()
-    }
-  }
-
-  getLyricsCacheStats(): { size: number; avgAge: number } {
-    const now = Date.now()
-    let totalAge = 0
-
-    for (const entry of Array.from(this.lyricsCache.values())) {
-      totalAge += now - entry.timestamp
-    }
-
-    const size = this.lyricsCache.size
-    const avgAge = size > 0 ? totalAge / size / 1000 : 0
-
-    return { size, avgAge }
   }
 
   async validateConfig(config: unknown): Promise<boolean> {
@@ -618,7 +435,6 @@ class SpotifyHandler extends BasePlaybackHandler {
     } else if (sp_dc && !clientId && !clientSecret) {
       const token = await getWebToken(sp_dc).catch(() => null)
       if (!token) return false
-
       return true
     }
 
@@ -627,79 +443,32 @@ class SpotifyHandler extends BasePlaybackHandler {
 
   async getCurrent(): Promise<SpotifyCurrentPlayingResponse | null> {
     const res = await this.instance!.get('/me/player', {
-      params: {
-        additional_types: 'episode'
-      }
+      params: { additional_types: 'episode' }
     })
 
     if (!res.data || res.status !== 200) return null
-
     return res.data
   }
 
   async getPlayback(): Promise<PlaybackData> {
     const current = await this.getCurrent()
-    if (!current) {
-      // If we have last played data, try to fetch its image and lyrics
-      if (this.lastPlayedData) {
-        try {
-          const image = await this.getImage()
-          if (image) {
-            this.emit('image', image.toString('base64'))
-          }
-          
-          const lyrics = await this.getLyrics()
-          if (lyrics) {
-            this.emit('lyrics', lyrics)
-          }
-        } catch (error) {
-          log(`Error fetching last played data: ${error}`, 'Spotify', LogLevel.WARN)
-        }
-      }
-      return this.lastPlayedData
-    }
-
-    const playbackData = filterData(current)
-    if (playbackData) {
-      this.lastPlayedData = playbackData
-      // Save last played data to storage
-      try {
-        setStorageValue(this.lastPlayedStorageKey, playbackData)
-        log('Saved last played track to storage', 'Spotify', LogLevel.DEBUG)
-      } catch (error) {
-        log(`Error saving last played data: ${error}`, 'Spotify', LogLevel.WARN)
-      }
-    }
-    return playbackData
+    if (!current) return null
+    return filterData(current)
   }
 
   async play(): Promise<void> {
     await this.instance!.put('/me/player/play')
-    
-    // Fetch lyrics after play is pressed
-    try {
-      const current = await this.getCurrent()
-      if (current && current.currently_playing_type === 'track') {
-        const item = current.item as SpotifyTrackItem
-        this.currentTrackId = item.id
-        const lyrics = await this.getLyrics()
-        if (lyrics) {
-          this.emit('lyrics', lyrics)
-        }
-      }
-    } catch (error) {
-      log(`Error fetching lyrics after play: ${error}`, 'Spotify', LogLevel.ERROR)
-    }
   }
 
   async pause(): Promise<void> {
     await this.instance!.put('/me/player/pause')
   }
 
-  async setVolume(volume: number): Promise<void> {
+  async setVolume(volume: number, deviceId?: string): Promise<void> {
     await this.instance!.put('/me/player/volume', null, {
       params: {
-        volume_percent: volume
+        volume_percent: volume,
+        ...(deviceId ? { device_id: deviceId } : {})
       }
     })
   }
@@ -714,9 +483,7 @@ class SpotifyHandler extends BasePlaybackHandler {
 
   async shuffle(state: boolean): Promise<void> {
     await this.instance!.put('/me/player/shuffle', null, {
-      params: {
-        state
-      }
+      params: { state }
     })
   }
 
@@ -728,9 +495,7 @@ class SpotifyHandler extends BasePlaybackHandler {
     }
 
     await this.instance!.put('/me/player/repeat', null, {
-      params: {
-        state: map[state]
-      }
+      params: { state: map[state] }
     })
   }
 
@@ -738,21 +503,23 @@ class SpotifyHandler extends BasePlaybackHandler {
     const current = await this.getCurrent()
     if (!current) return null
 
-    if (current.currently_playing_type === 'episode') {
-      const item = current.item as SpotifyEpisodeItem
-      const imageRes = await axios.get(item.images[0].url, {
-        responseType: 'arraybuffer'
-      })
-
-      return imageRes.data
-    } else if (current.currently_playing_type === 'track') {
-      const item = current.item as SpotifyTrackItem
-      const imageRes = await axios.get(item.album.images[1].url, {
-        responseType: 'arraybuffer'
-      })
-
-      return imageRes.data
-    } else {
+    try {
+      if (current.currently_playing_type === 'episode') {
+        const item = current.item as SpotifyEpisodeItem
+        const imageRes = await axios.get(item.images[0].url, {
+          responseType: 'arraybuffer'
+        })
+        return imageRes.data
+      } else if (current.currently_playing_type === 'track') {
+        const item = current.item as SpotifyTrackItem
+        const imageRes = await axios.get(item.album.images[1].url, {
+          responseType: 'arraybuffer'
+        })
+        return imageRes.data
+      }
+      return null
+    } catch (error) {
+      log(`Error fetching image: ${error}`, 'Spotify', LogLevel.ERROR)
       return null
     }
   }
@@ -766,35 +533,34 @@ class SpotifyHandler extends BasePlaybackHandler {
 
     const item = current.item as SpotifyTrackItem
     const trackId = item.id
-    this.currentTrackId = trackId
     const now = Date.now()
+
+    const cachedLyrics = this.lyricsCache.get(trackId)
+    if (
+      cachedLyrics &&
+      now - cachedLyrics.timestamp < this.lyricsCache.expirationAt()
+    ) {
+      return cachedLyrics.data
+    }
+
     try {
-      const cachedLyrics = this.lyricsCache.get(trackId)
-
-      if (
-        cachedLyrics &&
-        now - cachedLyrics.timestamp < this.lyricsCacheExpiration
-      ) {
-        log(
-          `Using cached lyrics for track: ${trackId}`,
-          'Spotify',
-          LogLevel.DEBUG
-        )
-        return cachedLyrics.data
-      }
-
-      log(`Fetching lyrics for track: ${trackId}`, 'Spotify')
       let url = `https://spclient.wg.spotify.com/color-lyrics/v2/track/${trackId}`
-
       if (item.album.images[0]?.url) {
         url += `/image/${encodeURIComponent(item.album.images[0].url)}`
       }
+      const params = new URLSearchParams()
+      params.append('format', 'json')
+      params.append('vocalRemoval', 'false')
+      params.append('market', 'from_token')
+      if (params.toString()) {
+        url += '?' + params.toString()
+      }
 
-      url += '?format=json&vocalRemoval=false&market=from_token'
-      log(`${url}`, 'Spotify', LogLevel.DEBUG)
-
-      const fetchLyrics = async (): Promise<any> => {
-        return await axios.get(url, {
+      const fetchLyrics = async (): Promise<{
+        status: number
+        data: LyricsResponse
+      }> => {
+        return axios.get(url, {
           headers: {
             authorization: `Bearer ${this.webToken}`,
             'app-platform': 'WebPlayer'
@@ -806,76 +572,438 @@ class SpotifyHandler extends BasePlaybackHandler {
       let res = await fetchLyrics()
 
       if (res.status === 401 && this.config?.sp_dc) {
-        log(
-          'Received 401 error, refreshing webToken and retrying',
-          'Spotify',
-          LogLevel.WARN
-        )
-        try {
-          this.webToken = await getWebToken(this.config.sp_dc)
-          log('Successfully refreshed webToken', 'Spotify', LogLevel.DEBUG)
-          res = await fetchLyrics()
-        } catch (refreshError) {
-          log(
-            `Failed to refresh webToken: ${refreshError}`,
-            'Spotify',
-            LogLevel.ERROR
-          )
-          throw new Error(`Failed to refresh webToken: ${refreshError}`)
-        }
+        this.webToken = await getWebToken(this.config.sp_dc)
+        log('Successfully refreshed webToken', 'Spotify', LogLevel.DEBUG)
+        res = await fetchLyrics()
       }
 
       if (res.status !== 200) {
         throw new Error(`Failed to fetch lyrics: ${res.status}`)
       }
+
       if (res.data.colors) {
-        intToRgb(res.data.colors?.background ?? 0)
         res.data.colors = {
           background: intToRgb(res.data.colors?.background) ?? 0,
           text: intToRgb(res.data.colors?.text) ?? 0,
           highlightText: intToRgb(res.data.colors?.highlightText) ?? 0
         }
       }
-      this.lyricsCache.set(trackId, { data: res.data, timestamp: now })
-      this.saveLyricsCache()
+
+      this.lyricsCache.set(trackId, res.data)
       return res.data
     } catch (error) {
       log(`Error fetching lyrics: ${error}`, 'Spotify', LogLevel.ERROR)
       const noLyricsMsg = 'No lyrics for this track'
-      this.lyricsCache.set(trackId, {
-        data: { message: noLyricsMsg },
-        timestamp: now
-      })
-      this.saveLyricsCache()
-      return this.lyricsCache.get(trackId)?.data ?? null
+      this.lyricsCache.set(trackId, { message: noLyricsMsg })
+      return { message: noLyricsMsg }
     }
   }
 
-  async refreshLyricsIfNeeded(): Promise<void> {
-    const current = await this.getCurrent()
-    if (!current || current.currently_playing_type !== 'track') return
+  async playlists(offset: number = 0) {
+    try {
+      const res = await this.instance!.get('/me/playlists', {
+        params: { offset, limit: 50 }
+      })
 
-    const item = current.item as SpotifyTrackItem
-    const trackId = item.id
+      if (res.status !== 200 || !res.data?.items) {
+        return { items: [], offset, total: 0 }
+      }
 
-    // If it's a new track or the current track's lyrics are expired
-    if (trackId !== this.currentTrackId) {
-      this.currentTrackId = trackId
-      const cachedLyrics = this.lyricsCache.get(trackId)
-      const now = Date.now()
+      const processedPlaylists: unknown[] = []
 
-      if (!cachedLyrics || (now - cachedLyrics.timestamp > this.lyricsCacheExpiration)) {
-        log(`Refreshing lyrics for track: ${trackId}`, 'Spotify', LogLevel.DEBUG)
+      for (const item of res.data.items) {
         try {
-          const lyrics = await this.getLyrics()
-          if (lyrics) {
-            this.emit('lyrics', lyrics)
+          const processedItem = {
+            ...item,
+            source: 'playlist',
+            type: 'playlist'
           }
-        } catch (error) {
-          log(`Error refreshing lyrics: ${error}`, 'Spotify', LogLevel.ERROR)
+
+          if (item.images && item.images.length > 0) {
+            processedItem.image = await this.fetchImage(
+              item.images[0].url,
+              item.id
+            )
+          } else {
+            processedItem.image = ''
+          }
+
+          processedPlaylists.push(processedItem)
+        } catch (itemErr) {
+          log(
+            `Error processing playlist item: ${itemErr}`,
+            'Spotify',
+            LogLevel.ERROR
+          )
+          processedPlaylists.push({
+            ...item,
+            source: 'playlist',
+            type: 'playlist'
+          })
         }
       }
+
+      return {
+        items: processedPlaylists,
+        offset,
+        total: res.data.total,
+        limit: res.data.limit,
+        next: res.data.next,
+        previous: res.data.previous
+      }
+    } catch (error) {
+      log(`Error in playlists: ${error}`, 'Spotify', LogLevel.ERROR)
+      return { items: [], offset, total: 0 }
     }
+  }
+
+  async likedSongsImage() {
+    return this.fetchImage(
+      'https://misc.scdn.co/liked-songs/liked-songs-300.jpg',
+      'liked-songs'
+    )
+  }
+
+  async likedSongs(offset: number = 0, limit: number = 50) {
+    try {
+      const res = await this.instance!.get('/me/tracks', {
+        params: { offset, limit }
+      })
+
+      if (res.status !== 200 || !res.data?.items) {
+        return { items: [], offset, total: 0 }
+      }
+
+      const processedLikedSongs: unknown[] = []
+
+      for (const item of res.data.items) {
+        try {
+          const track = { ...item.track }
+
+          if (track.artists && Array.isArray(track.artists)) {
+            track.artists = track.artists.map(
+              (artist: { name: string }) => artist.name
+            )
+          }
+
+          if (track.album?.images && track.album.images.length > 0) {
+            track.image = await this.fetchImage(
+              track.album.images[2].url,
+              track.id
+            )
+          } else {
+            track.image = ''
+          }
+
+          track.source = 'liked'
+          track.type = 'track'
+
+          processedLikedSongs.push(track)
+        } catch (itemErr) {
+          log(
+            `Error processing liked song item: ${itemErr}`,
+            'Spotify',
+            LogLevel.ERROR
+          )
+          const fallbackTrack = item.track
+          fallbackTrack.source = 'liked'
+          fallbackTrack.type = 'track'
+          processedLikedSongs.push(fallbackTrack)
+        }
+      }
+
+      return {
+        items: processedLikedSongs,
+        offset,
+        total: res.data.total,
+        limit: res.data.limit,
+        next: res.data.next,
+        previous: res.data.previous,
+        image: await this.likedSongsImage()
+      }
+    } catch (error) {
+      log(`Error in likedSongs: ${error}`, 'Spotify', LogLevel.ERROR)
+      return { items: [], offset, total: 0, image: null }
+    }
+  }
+
+  async getUserID() {
+    const res = await this.instance!.get('/me')
+    return res.data.id
+  }
+
+  async playPlaylist(playlistId: string) {
+    await this.instance!.put('/me/player/play', {
+      context_uri: `spotify:playlist:${playlistId}`
+    })
+  }
+
+  async playTrack(
+    trackID: string,
+    contextType?: string,
+    contextId?: string,
+    shuffle?: boolean
+  ) {
+    try {
+      let requestBody = {}
+      const userId = await this.getUserID()
+
+      if (contextType && contextId) {
+        requestBody = {
+          context_uri: `spotify:${contextType}:${contextId}`,
+          offset: { uri: `spotify:track:${trackID}` },
+          position_ms: 0
+        }
+      } else {
+        requestBody = {
+          context_uri: `spotify:user:${userId}:collection`,
+          offset: { uri: `spotify:track:${trackID}` },
+          position_ms: 0
+        }
+      }
+
+      const res = await this.instance!.put('/me/player/play', requestBody)
+
+      if (!contextType) {
+        await this.shuffle(shuffle ?? false)
+      }
+
+      if (res.status >= 200 && res.status < 300) {
+        return { success: true, trackID, contextType, contextId }
+      }
+
+      return { success: false, error: `${res.data}` }
+    } catch (error) {
+      log(`Error playing track: ${error}`, 'Spotify', LogLevel.ERROR)
+      return { success: false, error: `${error}` }
+    }
+  }
+
+  async albums(offset: number = 0, limit: number = 50) {
+    try {
+      const res = await this.instance!.get('/me/albums', {
+        params: { offset, limit }
+      })
+
+      if (res.status !== 200 || !res.data?.items) {
+        return { items: [], offset, total: 0 }
+      }
+
+      const processedAlbums: unknown[] = []
+
+      for (const item of res.data.items) {
+        try {
+          const album = {
+            ...item.album,
+            source: 'album',
+            type: 'album',
+            added_at: item.added_at
+          }
+
+          if (album.artists && Array.isArray(album.artists)) {
+            album.artists = album.artists.map(
+              (artist: { name: string }) => artist.name
+            )
+          }
+
+          if (album.images && album.images.length > 0) {
+            album.image = await this.fetchImage(
+              album.images[1].url,
+              album.id
+            )
+          } else {
+            album.image = ''
+          }
+
+          processedAlbums.push(album)
+        } catch (itemErr) {
+          log(
+            `Error processing album item: ${itemErr}`,
+            'Spotify',
+            LogLevel.ERROR
+          )
+          const fallbackAlbum = item.album
+          fallbackAlbum.source = 'album'
+          fallbackAlbum.type = 'album'
+          fallbackAlbum.added_at = item.added_at
+          processedAlbums.push(fallbackAlbum)
+        }
+      }
+
+      return {
+        items: processedAlbums,
+        offset,
+        total: res.data.total,
+        limit: res.data.limit,
+        next: res.data.next,
+        previous: res.data.previous
+      }
+    } catch (error) {
+      log(`Error in albums: ${error}`, 'Spotify', LogLevel.ERROR)
+      return { items: [], offset, total: 0 }
+    }
+  }
+
+  async albumTracks(
+    albumId: string,
+    offset: number = 0,
+    limit: number = 50
+  ) {
+    try {
+      const res = await this.instance!.get(`/albums/${albumId}/tracks`, {
+        params: { offset, limit }
+      })
+
+      if (res.status !== 200 || !res.data) {
+        return null
+      }
+
+      const processedTracks: unknown[] = []
+
+      for (const item of res.data.items) {
+        try {
+          const track = { ...item, album_id: albumId }
+          if (track.artists && Array.isArray(track.artists)) {
+            track.artists = track.artists.map(
+              (artist: { name: string }) => artist.name
+            )
+          }
+
+          processedTracks.push(track)
+        } catch (itemErr) {
+          log(
+            `Error processing album track item: ${itemErr}`,
+            'Spotify',
+            LogLevel.ERROR
+          )
+          processedTracks.push({ ...item, album_id: albumId })
+        }
+      }
+
+      res.data.items = processedTracks
+      return res.data
+    } catch (error) {
+      log(`Error in albumTracks: ${error}`, 'Spotify', LogLevel.ERROR)
+      return null
+    }
+  }
+
+  async playAlbum(albumId: string) {
+    try {
+      const res = await this.instance!.put('/me/player/play', {
+        context_uri: `spotify:album:${albumId}`
+      })
+
+      if (res.status >= 200 && res.status < 300) {
+        return { success: true, albumId }
+      }
+      return { success: false, error: `${res.data}` }
+    } catch (error) {
+      log(`Error playing album: ${error}`, 'Spotify', LogLevel.ERROR)
+      return { success: false, error: `${error}` }
+    }
+  }
+
+  async playlistTracks(
+    playlistId: string,
+    offset: number = 0,
+    limit: number = 50
+  ) {
+    try {
+      const res = await this.instance!.get(
+        `/playlists/${playlistId}/tracks`,
+        { params: { offset, limit } }
+      )
+
+      if (res.status !== 200 || !res.data) {
+        return null
+      }
+
+      const processedPlaylistTracks: unknown[] = []
+
+      for (const item of res.data.items) {
+        try {
+          const track = { ...item.track }
+
+          track.artists = track.artists.map(
+            (artist: { name: string }) => artist.name
+          )
+          track.source = 'playlist'
+          track.type = 'track'
+          track.playlist_id = playlistId
+
+          if (track.album?.images && track.album.images.length > 0) {
+            track.image = await this.fetchImage(
+              track.album.images[2].url,
+              track.id
+            )
+          } else {
+            track.image = ''
+          }
+
+          processedPlaylistTracks.push(track)
+        } catch (itemErr) {
+          log(
+            `Error processing playlist track item: ${itemErr}`,
+            'Spotify',
+            LogLevel.ERROR
+          )
+          const fallbackTrack = item.track
+          fallbackTrack.source = 'playlist'
+          fallbackTrack.type = 'track'
+          fallbackTrack.playlist_id = playlistId
+          processedPlaylistTracks.push(fallbackTrack)
+        }
+      }
+      res.data.items = processedPlaylistTracks
+      return res.data
+    } catch (error) {
+      log(`Error in playlistTracks: ${error}`, 'Spotify', LogLevel.ERROR)
+      return null
+    }
+  }
+
+  async devices(): Promise<SpotifyDevice[]> {
+    try {
+      const res = await this.instance!.get('/me/player/devices')
+      if (res.status !== 200 || !res.data?.devices) {
+        return []
+      }
+      return res.data.devices
+    } catch (error) {
+      log(`Error in devices: ${error}`, 'Spotify', LogLevel.ERROR)
+      return []
+    }
+  }
+
+  async transferPlayback(
+    deviceId: string,
+    play: boolean = true
+  ): Promise<PlaybackResponse> {
+    try {
+      const res = await this.instance!.put('/me/player', {
+        device_ids: [deviceId],
+        play
+      })
+
+      if (res.status >= 200 && res.status < 300) {
+        return { success: true }
+      }
+
+      return { success: false, error: res.data.message }
+    } catch (error) {
+      log(
+        `Error transferring playback: ${error}`,
+        'Spotify',
+        LogLevel.ERROR
+      )
+      return { success: false, error: `${error}` }
+    }
+  }
+
+  async getActiveDevice(): Promise<SpotifyDevice | null> {
+    const devices = await this.devices()
+    return devices.find(device => device.is_active) || null
   }
 }
 

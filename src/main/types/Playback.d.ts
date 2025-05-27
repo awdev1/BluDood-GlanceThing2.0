@@ -1,3 +1,5 @@
+import { rgb } from './utils'
+
 export type RepeatMode = 'off' | 'on' | 'one'
 
 export type Action =
@@ -9,6 +11,9 @@ export type Action =
   | 'repeat'
   | 'volume'
   | 'image'
+  | 'lyrics'
+  | 'playlists'
+  | 'devices'
 
 export type PlaybackData = {
   isPlaying: boolean
@@ -16,6 +21,7 @@ export type PlaybackData = {
   shuffle: boolean
   repeat: RepeatMode
   track: {
+    id: string
     name: string
     artists: string[]
     album: string
@@ -23,6 +29,10 @@ export type PlaybackData = {
       current: number
       total: number
     }
+  }
+  context: {
+    type: string
+    uri: string
   }
   supportedActions: Action[]
 } | null
@@ -51,10 +61,18 @@ export interface LyricsResponse {
     }
   }
   colors?: {
-    background: number
-    text: number
-    highlightText: number
+    background: rgb
+    text: rgb
+    highlightText: rgb
   }
   hasVocalRemoval?: boolean
   message?: string
+  source?: string
+}
+
+export type PlaybackResponse = {
+  success: boolean
+  message?: string
+  error?: string
+  data?: unknown
 }

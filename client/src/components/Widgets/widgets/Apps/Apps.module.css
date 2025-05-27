@@ -27,7 +27,7 @@
 }
 
 .app:focus {
-  border-color: rgba(0, 100, 255, 0.5);
+  border-color: var(--color-primary);
 }
 
 .app img {

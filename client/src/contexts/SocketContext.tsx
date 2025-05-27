@@ -1,4 +1,10 @@
-import React, { createContext, useEffect, useRef, useState } from 'react'
+import React, {
+  createContext,
+  useCallback,
+  useEffect,
+  useRef,
+  useState
+} from 'react'
 
 import { getSocketPassword } from '@/lib/utils.ts'
 
@@ -25,7 +31,7 @@ const SocketContextProvider = ({
   const ws = useRef<WebSocket | null>(null)
   const [firstLoad, setFirstLoad] = useState(true)
 
-  function connect() {
+  const connect = useCallback(() => {
     ws.current = new WebSocket('ws://localhost:1337')
 
     ws.current.onopen = async () => {
@@ -49,7 +55,7 @@ const SocketContextProvider = ({
         connect()
       }, 1000)
     }
-  }
+  }, [])
 
   useEffect(() => {
     connect()
@@ -57,8 +63,7 @@ const SocketContextProvider = ({
     return () => {
       ws.current?.close()
     }
-    // eslint-disable-next-line
-  }, [])
+  }, [connect])
 
   const missedPongsRef = useRef(0)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)

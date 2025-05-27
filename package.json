@@ -1,6 +1,6 @@
 {
   "name": "glancething",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "Desktop application for GlanceThing",
   "main": "./out/main/index.js",
   "author": "BluDood",
@@ -15,8 +15,9 @@
     "postinstall": "electron-builder install-app-deps",
     "build:unpack": "npm run build && electron-builder --dir",
     "build:win": "npm run build && electron-builder --win",
-    "build:mac": "electron-vite build && electron-builder --mac",
-    "build:linux": "electron-vite build && electron-builder --linux"
+    "build:mac": "npm run build && electron-builder --mac",
+    "build:win:nightly": "npm run build && electron-builder --win --config electron-builder.nightly.yml",
+    "build:mac:nightly": "npm run build && electron-builder --mac --config electron-builder.nightly.yml"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
@@ -34,9 +35,12 @@
     "ws": "^8.18.2"
   },
   "devDependencies": {
+    "@electron-toolkit/eslint-config": "^2.1.0",
     "@electron-toolkit/eslint-config-prettier": "^3.0.0",
     "@electron-toolkit/eslint-config-ts": "^3.1.0",
     "@electron-toolkit/tsconfig": "^1.0.1",
+    "@eslint/eslintrc": "^3.3.1",
+    "@eslint/js": "^9.27.0",
     "@types/node": "^22.15.18",
     "@types/node-cron": "^3.0.11",
     "@types/react": "^19.1.4",
@@ -46,7 +50,7 @@
     "electron": "^36.2.0",
     "electron-builder": "^26.0.12",
     "electron-vite": "^3.1.0",
-    "eslint": "^9.26.0",
+    "eslint": "^9.27.0",
     "eslint-plugin-react": "^7.37.5",
     "prettier": "^3.5.3",
     "react": "^19.1.0",
@@ -54,5 +58,9 @@
     "typed-emitter": "^2.1.0",
     "typescript": "^5.8.3",
     "vite": "^6.3.5"
+  },
+  "optionalDependencies": {
+    "node-nowplaying-darwin-universal": "0.1.0",
+    "node-nowplaying-win32-x64-msvc": "0.1.0"
   }
 }

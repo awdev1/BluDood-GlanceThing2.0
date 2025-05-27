@@ -1,9 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
-import styles from './Spotify.module.css';
-import Loader from '@/components/Loader/Loader.js';
+import React, { useEffect, useRef, useState } from 'react'
+import styles from './Spotify.module.css'
+import Loader from '@/components/Loader/Loader.js'
 
 interface SpotifyFreeProps {
-  onStepComplete: () => void;
+  onStepComplete: () => void
 }
 
 enum SpotifyStep {
@@ -11,22 +11,22 @@ enum SpotifyStep {
 }
 
 const SpotifyFree: React.FC<SpotifyFreeProps> = ({ onStepComplete }) => {
-  const [step] = useState<SpotifyStep>(0);
-  const [hasSetup, setHasSetup] = useState(false);
+  const [step] = useState<SpotifyStep>(0)
+  const [hasSetup, setHasSetup] = useState(false)
 
   useEffect(() => {
     window.api.getPlaybackHandlerConfig('spotifyfree').then(data => {
-      if (data) setHasSetup(true);
-    });
-  }, []);
+      if (data) setHasSetup(true)
+    })
+  }, [])
 
   return (
     <div className={styles.spotify}>
       {step === SpotifyStep.Token ? (
         <TokenSetup
           onStepComplete={data => {
-            window.api.setPlaybackHandlerConfig('spotifyfree', data); 
-            onStepComplete();
+            window.api.setPlaybackHandlerConfig('spotifyfree', data)
+            onStepComplete()
           }}
         />
       ) : null}
@@ -40,11 +40,14 @@ const SpotifyFree: React.FC<SpotifyFreeProps> = ({ onStepComplete }) => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
 interface TokenSetupProps {
-  onStepComplete: (data: { discordToken: string; connectionId: string }) => void;
+  onStepComplete: (data: {
+    discordToken: string
+    connectionId: string
+  }) => void
 }
 
 enum TokenSetupState {
@@ -56,88 +59,101 @@ enum TokenSetupState {
 }
 
 const TokenSetup: React.FC<TokenSetupProps> = ({ onStepComplete }) => {
-  const [state, setState] = useState<TokenSetupState>(0);
-  const [error, setError] = useState<string>('');
-  const discordTokenRef = useRef<HTMLInputElement | null>(null);
-  const connectionIdRef = useRef<HTMLInputElement | null>(null);
+  const [state, setState] = useState<TokenSetupState>(0)
+  const [error, setError] = useState<string>('')
+  const discordTokenRef = useRef<HTMLInputElement | null>(null)
+  const connectionIdRef = useRef<HTMLInputElement | null>(null)
 
   async function check() {
-    const discordToken = discordTokenRef.current!.value;
-    const connectionId = connectionIdRef.current!.value;
-    setError('');
-    setState(TokenSetupState.Checking);
-    await new Promise(r => setTimeout(r, 0));
-    if (!validate(discordToken, connectionId)) return;
+    const discordToken = discordTokenRef.current!.value
+    const connectionId = connectionIdRef.current!.value
+    setError('')
+    setState(TokenSetupState.Checking)
+    await new Promise(r => setTimeout(r, 0))
+    if (!validate(discordToken, connectionId)) return
     const valid = await window.api.validateConfig('spotifyfree', {
       discordToken,
       connectionId
-    });
+    })
     if (valid) {
-      setState(TokenSetupState.Valid);
+      setState(TokenSetupState.Valid)
     } else {
-      setError('Invalid Discord token or connection ID! Please try again.');
-      setState(TokenSetupState.Invalid);
+      setError('Invalid Discord token or connection ID! Please try again.')
+      setState(TokenSetupState.Invalid)
     }
   }
 
   function complete() {
-    const discordToken = discordTokenRef.current!.value;
-    const connectionId = connectionIdRef.current!.value;
-    onStepComplete({ discordToken, connectionId });
+    const discordToken = discordTokenRef.current!.value
+    const connectionId = connectionIdRef.current!.value
+    onStepComplete({ discordToken, connectionId })
   }
 
   function validate(discordToken: string, connectionId: string) {
     if (discordToken.length === 0) {
-      setError('Discord token cannot be empty!');
-      setState(TokenSetupState.Invalid);
-      return false;
+      setError('Discord token cannot be empty!')
+      setState(TokenSetupState.Invalid)
+      return false
     }
-    if (!/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(discordToken)) {
-      setError('Invalid Discord token format!');
-      setState(TokenSetupState.Invalid);
-      return false;
+    if (
+      !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(
+        discordToken
+      )
+    ) {
+      setError('Invalid Discord token format!')
+      setState(TokenSetupState.Invalid)
+      return false
     }
     if (connectionId.length === 0) {
-      setError('Connection ID cannot be empty!');
-      setState(TokenSetupState.Invalid);
-      return false;
+      setError('Connection ID cannot be empty!')
+      setState(TokenSetupState.Invalid)
+      return false
     }
     if (!/^[a-zA-Z0-9-]+$/.test(connectionId)) {
-      setError('Invalid connection ID format!');
-      setState(TokenSetupState.Invalid);
-      return false;
+      setError('Invalid connection ID format!')
+      setState(TokenSetupState.Invalid)
+      return false
     }
-    return true;
+    return true
   }
 
   return (
     <div className={styles.step}>
       <h2>Step 1: Discord Token and Connection ID Setup</h2>
       <p>
-           To enable Spotify Free playback on GlanceThing, you need to provide your Discord token and Spotify discord connection ID.</p>
+        To enable Spotify Free playback on GlanceThing, you need to provide
+        your Discord token and Spotify discord connection ID.
+      </p>
       <p className={styles.disclaimer}>
-        
-        <strong>Privacy notice:</strong> Your Discord token and connection ID are only used to authenticate with Discord and Spotify once every hour to retreive tokens.
-        This data is never stored or sent to any other third parties. We use the same logic as{' '}
+        <strong>Privacy notice:</strong> Your Discord token and connection
+        ID are only used to authenticate with Discord and Spotify once
+        every hour to retreive tokens. This data is never stored or sent to
+        any other third parties. We use the same logic as{' '}
         <a
           href="https://github.com/Vendicated/Vencord/blob/main/src/plugins/spotifyControls/PlayerComponent.tsx"
           target="_blank"
           rel="noreferrer"
         >
-          Vencord's SpotifyControls
+          Vencord&quot;s SpotifyControls
         </a>{' '}
       </p>
       <div className={styles.inputs}>
         <input
           ref={discordTokenRef}
-          disabled={[TokenSetupState.Checking, TokenSetupState.Valid].includes(state)}
+          disabled={[
+            TokenSetupState.Checking,
+            TokenSetupState.Valid
+          ].includes(state)}
           type="password"
           placeholder="Discord token"
           className={styles.input}
         />
         <input
           ref={connectionIdRef}
-          disabled={[TokenSetupState.Checking, TokenSetupState.Valid].includes(state)}
+          disabled={[
+            TokenSetupState.Checking,
+            TokenSetupState.Valid
+          ].includes(state)}
           type="text"
           placeholder="Connection ID"
           className={styles.input}
@@ -186,7 +202,7 @@ const TokenSetup: React.FC<TokenSetupProps> = ({ onStepComplete }) => {
         ) : null}
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default SpotifyFree;
+export default SpotifyFree

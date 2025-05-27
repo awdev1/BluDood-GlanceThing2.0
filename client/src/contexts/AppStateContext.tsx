@@ -8,8 +8,8 @@ import React, {
 } from 'react'
 import { SocketContext } from './SocketContext'
 import { getWeatherEmoji, getWeatherDescription } from '@/lib/weatherCodes'
-import { formatDateTime } from '@/lib/timeFormat'
-import { debouncedFunction } from '@/lib/utils'
+import { formatDateTime } from '@/lib/datetimeFormater'
+import { debounce } from '@/lib/utils'
 
 interface WeatherData {
   location: string
@@ -23,6 +23,8 @@ interface WeatherData {
 }
 
 interface AppSettings {
+  timeFormat: string
+  dateFormat: string
   showStatusBar: boolean
   showTimeWidget: boolean
   showWeatherWidget: boolean
@@ -36,6 +38,15 @@ interface AppSettings {
   autoSwitchToLyrics: boolean
   showTimeInStatusBar: boolean
   showWeatherInStatusBar: boolean
+  showHighLowTemp: boolean
+  showWeatherDescription: boolean
+  showWeatherIcon: boolean
+  showHumidity: boolean
+  showHighLowTempStatusBar: boolean
+  showWeatherDescriptionStatusBar: boolean
+  showWeatherIconStatusBar: boolean
+  showHumidityStatusBar: boolean
+  playbackSyncTime: number
 }
 
 interface AppStateContextProps extends AppSettings {
@@ -46,11 +57,16 @@ interface AppStateContextProps extends AppSettings {
   weatherError: boolean
   weatherEmoji: string
   weatherDescription: string
-  temperatureUnit: string
   setSettings: (settings: Partial<AppSettings>) => void
+  playerShown: boolean
+  setPlayerShown: (shown: boolean) => void
+  playlistsShown: boolean
+  setPlaylistsShown: (shown: boolean) => void
 }
 
 const defaultSettings: AppSettings = {
+  timeFormat: 'HH:mm',
+  dateFormat: 'ddd, D MMM',
   showStatusBar: true,
   showTimeWidget: true,
   showWeatherWidget: true,
@@ -63,7 +79,16 @@ const defaultSettings: AppSettings = {
   showTempUnit: true,
   autoSwitchToLyrics: false,
   showTimeInStatusBar: true,
-  showWeatherInStatusBar: true
+  showWeatherInStatusBar: true,
+  showHighLowTemp: true,
+  showWeatherDescription: true,
+  showWeatherIcon: true,
+  showHumidity: true,
+  showHighLowTempStatusBar: true,
+  showWeatherDescriptionStatusBar: true,
+  showWeatherIconStatusBar: true,
+  showHumidityStatusBar: true,
+  playbackSyncTime: 5
 }
 
 const AppStateContext = createContext<AppStateContextProps>({
@@ -76,7 +101,10 @@ const AppStateContext = createContext<AppStateContextProps>({
   weatherError: false,
   weatherEmoji: '',
   weatherDescription: '',
-  temperatureUnit: ''
+  playerShown: false,
+  setPlayerShown: () => {},
+  playlistsShown: false,
+  setPlaylistsShown: () => {}
 })
 
 interface AppStateContextProviderProps {
@@ -102,9 +130,11 @@ const AppStateContextProvider = ({
   const [weather, setWeather] = useState<WeatherData | null>(null)
   const [weatherEmoji, setWeatherEmoji] = useState<string>('')
   const [weatherDescription, setWeatherDescription] = useState<string>('')
-  const [temperatureUnit, setTemperatureUnit] = useState<string>('')
   const [weatherLoading, setWeatherLoading] = useState<boolean>(true)
   const [weatherError, setWeatherError] = useState<boolean>(false)
+
+  const [playerShown, setPlayerShown] = useState<boolean>(false)
+  const [playlistsShown, setPlaylistsShown] = useState<boolean>(false)
 
   const setSettings = (newSettings: Partial<AppSettings>) => {
     setSettingsState(prev => ({
@@ -117,8 +147,8 @@ const AppStateContextProvider = ({
     }
   }
 
-  const debouncedSendSettings = useCallback(
-    debouncedFunction((newSettings: Partial<AppSettings>) => {
+  const debouncedSendSettings = debounce(
+    (newSettings: Partial<AppSettings>) => {
       if (socket?.readyState === 1) {
         socket.send(
           JSON.stringify({
@@ -127,8 +157,8 @@ const AppStateContextProvider = ({
           })
         )
       }
-    }, 300),
-    [socket]
+    },
+    300
   )
 
   const setTimeDate = (time?: string, date?: string) => {
@@ -148,62 +178,50 @@ const AppStateContextProvider = ({
       )
       const formattedDateTime = formatDateTime(
         updatedTime,
-        localStorage.getItem('timeFormat') ?? '',
-        localStorage.getItem('dateFormat') ?? ''
+        settings.timeFormat,
+        settings.dateFormat
       )
       setTimeDate(formattedDateTime.time, formattedDateTime.date)
     } catch (error) {
       console.error('Error updating local time:', error)
       setTimeDate()
     }
-  }, [])
+  }, [settings.timeFormat, settings.dateFormat])
 
-  const handleSocketMessage = useCallback(
-    (e: MessageEvent) => {
-      try {
-        const { type, data } = JSON.parse(e.data)
+  const handleSocketMessage = useCallback((e: MessageEvent) => {
+    try {
+      const { type, data } = JSON.parse(e.data)
 
-        switch (type) {
-          case 'setting':
-            if (data) {
-              setSettingsState(prev => ({
-                ...prev,
-                ...data
-              }))
-            }
-            break
+      switch (type) {
+        case 'setting':
+          if (data) {
+            setSettingsState(prev => ({
+              ...prev,
+              ...data
+            }))
+          }
+          break
 
-          case 'time':
-            setTimeDate(data.time, data.date)
-            lastServerTime.current = new Date(data.dateTime)
-            lastConnectionTime.current = performance.now()
-            localStorage.setItem('timeFormat', data.timeFormat)
-            localStorage.setItem('dateFormat', data.dateFormat)
-            break
+        case 'time':
+          setTimeDate(data.time, data.date)
+          lastServerTime.current = new Date(data.dateTime)
+          lastConnectionTime.current = performance.now()
+          break
 
-          case 'weather':
-            setWeatherLoading(false)
-            if (data) {
-              setWeather(data)
-              setWeatherEmoji(getWeatherEmoji(data.weatherCode))
-              setWeatherDescription(
-                getWeatherDescription(data.weatherCode)
-              )
-              if (settings.showTempUnit) {
-                setTemperatureUnit(
-                  data.temperatureUnit === 'fahrenheit' ? 'F' : 'C'
-                )
-              }
-              setWeatherError(false)
-            }
-            break
-        }
-      } catch (error) {
-        console.error('Error processing server message:', error)
+        case 'weather':
+          setWeatherLoading(false)
+          if (data) {
+            setWeather(data)
+            setWeatherEmoji(getWeatherEmoji(data.weatherCode))
+            setWeatherDescription(getWeatherDescription(data.weatherCode))
+            setWeatherError(false)
+          }
+          break
       }
-    },
-    [settings.showTempUnit]
-  )
+    } catch (error) {
+      console.error('Error processing server message:', error)
+    }
+  }, [])
 
   useEffect(() => {
     if (ready && socket) {
@@ -254,7 +272,10 @@ const AppStateContextProvider = ({
     weatherError,
     weatherEmoji,
     weatherDescription,
-    temperatureUnit
+    playerShown,
+    setPlayerShown,
+    playlistsShown,
+    setPlaylistsShown
   }
 
   return (

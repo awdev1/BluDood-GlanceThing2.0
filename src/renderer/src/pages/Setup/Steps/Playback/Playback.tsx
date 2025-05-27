@@ -1,13 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react'
 
-import styles from './Playback.module.css';
+import styles from './Playback.module.css'
 
-import Spotify from './providers/Spotify/Spotify.js';
-import SpotifyFree from './providers/SpotifyFree/SpotifyFree.js'; // New import for Spotify Free
-import None from './providers/None/None.js';
+import Spotify from './providers/Spotify/Spotify.js'
+import SpotifyFree from './providers/SpotifyFree/SpotifyFree.js' // New import for Spotify Free
+import None from './providers/None/None.js'
+import Native from './providers/Native/Native.js'
 
 interface PlaybackProps {
-  onStepComplete: () => void;
+  onStepComplete: () => void
 }
 
 enum State {
@@ -16,17 +17,19 @@ enum State {
 }
 
 const Playback: React.FC<PlaybackProps> = ({ onStepComplete }) => {
-  const [state, setState] = useState<State>(0);
-  const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
+  const [state, setState] = useState<State>(0)
+  const [selectedProvider, setSelectedProvider] = useState<string | null>(
+    null
+  )
 
   useEffect(() => {
-    setState(State.Pending);
-  }, [selectedProvider]);
+    setState(State.Pending)
+  }, [selectedProvider])
 
   async function complete() {
-    await window.api.setStorageValue('playbackHandler', selectedProvider);
-    await window.api.restartPlaybackHandler();
-    onStepComplete();
+    await window.api.setStorageValue('playbackHandler', selectedProvider)
+    await window.api.restartPlaybackHandler()
+    onStepComplete()
   }
 
   return (
@@ -62,6 +65,14 @@ const Playback: React.FC<PlaybackProps> = ({ onStepComplete }) => {
           <span className="material-icons">rss_feed</span>
           Spotify Free
         </button>
+        <button
+          className={styles.provider}
+          onClick={() => setSelectedProvider('native')}
+          data-selected={selectedProvider === 'native'}
+        >
+          <span className="material-icons">settings_input_component</span>
+          Native
+        </button>
       </div>
       <div className={styles.setup} key={selectedProvider}>
         {selectedProvider === 'none' ? (
@@ -70,6 +81,8 @@ const Playback: React.FC<PlaybackProps> = ({ onStepComplete }) => {
           <Spotify onStepComplete={complete} />
         ) : selectedProvider === 'spotifyfree' ? (
           <SpotifyFree onStepComplete={complete} />
+        ) : selectedProvider === 'native' ? (
+          <Native onStepComplete={complete} />
         ) : null}
       </div>
       <div className={styles.buttons}>
@@ -78,7 +91,7 @@ const Playback: React.FC<PlaybackProps> = ({ onStepComplete }) => {
         ) : null}
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Playback;
+export default Playback

@@ -179,11 +179,23 @@ export function getPlatformTar() {
   }
 }
 
-export function intToRgb(colorInt: number): {
+export const isNightly = app.getName().endsWith('-nightly')
+
+export const resourceFolder = path.join(
+  process.env.NODE_ENV === 'development'
+    ? app.getAppPath()
+    : `${path.join(process.resourcesPath, 'app.asar.unpacked')}`,
+  'resources',
+  isNightly ? 'nightly' : 'stable'
+)
+
+export type rgb = {
   r: number
   g: number
   b: number
-} {
+}
+
+export function intToRgb(colorInt: number): rgb {
   if (colorInt < 0) {
     colorInt = 0xffffffff + colorInt + 1
   }
@@ -193,4 +205,37 @@ export function intToRgb(colorInt: number): {
   const b = colorInt & 0xff
 
   return { r, g, b }
+}
+
+export function base32FromBytes(
+  bytes: Uint8Array,
+  secretSauce: string
+): string {
+  let t = 0
+  let n = 0
+  let r = ''
+
+  for (let i = 0; i < bytes.length; i++) {
+    n = (n << 8) | bytes[i]
+    t += 8
+    while (t >= 5) {
+      r += secretSauce[(n >>> (t - 5)) & 31]
+      t -= 5
+    }
+  }
+
+  if (t > 0) {
+    r += secretSauce[(n << (5 - t)) & 31]
+  }
+
+  return r
+}
+
+export function cleanBuffer(e: string): Uint8Array {
+  e = e.replace(' ', '')
+  const buffer = new Uint8Array(e.length / 2)
+  for (let i = 0; i < e.length; i += 2) {
+    buffer[i / 2] = parseInt(e.substring(i, i + 2), 16)
+  }
+  return buffer
 }

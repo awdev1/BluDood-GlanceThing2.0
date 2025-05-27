@@ -84,7 +84,7 @@ If you need any help with GlanceThing or the CarThing in general, don't hesitate
 
 ## Credits
 
-Huge thanks to the [CarThing community](https://discord.gg/car-thing-hax-community-1042954149786046604) for feedback and thoughts, and special thanks to [Riprod](https://itsriprod.com/) and their [DeskThing](https://github.com/ItsRiprod/DeskThing) project for inspiration.
+Huge thanks to the [CarThing community](https://discord.gg/car-thing-hax-community-1042954149786046604) for feedback and thoughts, and special thanks to [Riprod](https://itsriprod.com/), [BluDood](https://github.com/BluDood) and [Awdev1](https://github.com/awdev1) and their [DeskThing](https://github.com/ItsRiprod/DeskThing), [GlanceThing](https://github.com/BluDood/GlanceThing) and [GlanceThing2.0](https://github.com/awdev1/BluDood-GlanceThing2.0) projects for inspiration.
 
 The project also mainly utilizes the following technologies:
 

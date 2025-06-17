@@ -142,7 +142,7 @@ const Shortcuts: React.FC = () => {
               setHasSetImage(true)
             }}
           >
-            <img ref={uploadImageRef} src="" alt="" />
+            <img ref={uploadImageRef} alt="" />
             <span className={styles.hint}>
               <span className="material-icons">upload</span>
               Image

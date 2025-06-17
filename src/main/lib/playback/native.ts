@@ -1,8 +1,18 @@
 import { BasePlaybackHandler } from './BasePlaybackHandler.js'
 import { log, LogLevel } from '../utils.js'
+import {
+  getLyrics,
+  initializeLyricsCache,
+  cleanupLyricsCache
+} from '../lyric.js'
 
-import { PlaybackData, RepeatMode } from '../../types/Playback.js'
+import {
+  PlaybackData,
+  RepeatMode,
+  LyricsResponse
+} from '../../types/Playback.js'
 import { createRequire } from 'node:module'
+import axios from 'axios'
 
 declare class NowPlaying {
   constructor(
@@ -115,6 +125,15 @@ function importAddon() {
       log(`Failed to import native addon: ${e}`, 'Native')
       return null
     }
+  } else if (process.platform === 'linux') {
+    if (process.arch === 'x64') {
+      try {
+        return require('node-nowplaying-linux-x64-gnu')
+      } catch (e) {
+        log(`Failed to import native addon: ${e}`, 'Native')
+        return null
+      }
+    }
   }
 
   log('No native addon available for this platform', 'Native')
@@ -167,6 +186,10 @@ export function filterData(data: NowPlayingMessage): PlaybackData | null {
   if (canSkip) playbackData.supportedActions.push('next', 'previous')
   if (data.thumbnail) playbackData.supportedActions.push('image')
 
+  // Add lyrics support for tracks
+  if (trackName && artist && album)
+    playbackData.supportedActions.push('lyrics')
+
   return playbackData
 }
 
@@ -183,6 +206,8 @@ class NativeHandler extends BasePlaybackHandler {
 
   async setup(config: NativeConfig): Promise<void> {
     log('Setting up', 'Native')
+
+    initializeLyricsCache()
 
     const addon = importAddon()
     if (!addon) return
@@ -205,6 +230,8 @@ class NativeHandler extends BasePlaybackHandler {
 
   async cleanup(): Promise<void> {
     log('Cleaning up', 'Native')
+
+    cleanupLyricsCache()
 
     this.instance?.unsubscribe()
     this.instance = null
@@ -265,14 +292,30 @@ class NativeHandler extends BasePlaybackHandler {
   }
 
   async getImage(): Promise<Buffer | null> {
-    if (!this.current?.thumbnail) return null
+    const thumb = this.current?.thumbnail
+    if (!thumb) return null
 
-    const base64 = this.current.thumbnail.replace(
-      /^data:image\/\w+;base64,/,
-      ''
-    )
-    const buffer = Buffer.from(base64, 'base64')
-    return buffer
+    if (thumb.startsWith('data:image')) {
+      const base64 = thumb.replace(/^data:image\/\w+;base64,/, '')
+      const buffer = Buffer.from(base64, 'base64')
+      return buffer
+    } else if (
+      thumb.startsWith('https://') ||
+      thumb.startsWith('http://')
+    ) {
+      const res = await axios.get(thumb, {
+        responseType: 'arraybuffer'
+      })
+
+      return res.data
+    } else return null
+  }
+
+  async getLyrics(): Promise<LyricsResponse | null> {
+    const playbackData = await this.getPlayback()
+    if (!playbackData) return null
+
+    return getLyrics(playbackData)
   }
 }
 

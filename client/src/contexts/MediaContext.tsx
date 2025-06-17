@@ -24,8 +24,8 @@ interface MediaContextProps {
   playerData: PlaybackData | null
   playerDataRef: React.MutableRefObject<PlaybackData | null>
   lyricsData: SpotifyLyricsData | null
-  currentLineIndex: number
-
+  lyricsLoading?: boolean
+  lyricsCurrentLineIndex: number
   playlistsData: SpotifyPlaylistsItems[] | null
   albumsData: Album[] | null
   playlistsOffset: number
@@ -77,7 +77,7 @@ const MediaContext = createContext<MediaContextProps>({
   playerData: null,
   playerDataRef: { current: null },
   lyricsData: null,
-  currentLineIndex: -1,
+  lyricsCurrentLineIndex: -1,
   playlistsData: null,
   albumsData: null,
   playlistsOffset: 0,
@@ -120,8 +120,7 @@ interface MediaContextProviderProps {
 
 const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
   const { ready, socket } = useContext(SocketContext)
-  const { showLyricsWidget, playbackSyncTime } =
-    useContext(AppStateContext)
+  const { showLyricsWidget } = useContext(AppStateContext)
   const socketRef = useRef<WebSocket | null>(null)
 
   const [playerData, setPlayerData] = useState<PlaybackData | null>(null)
@@ -130,7 +129,9 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
   const [lyricsData, setLyricsData] = useState<SpotifyLyricsData | null>(
     null
   )
-  const [currentLineIndex, setCurrentLineIndex] = useState<number>(-1)
+  const [lyricsLoading, setLyricsLoading] = useState<boolean>(false)
+  const [lyricsCurrentLineIndex, setlyricsCurrentLineIndex] =
+    useState<number>(-1)
 
   const [playlistsData, setPlaylistsData] = useState<
     SpotifyPlaylistsItems[] | null
@@ -162,15 +163,15 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
     const lines = lyricsData.lyrics.lines
 
     if (currentTime < parseInt(lines[0].startTimeMs)) {
-      if (currentLineIndex !== -1) {
-        setCurrentLineIndex(-1)
+      if (lyricsCurrentLineIndex !== -1) {
+        setlyricsCurrentLineIndex(-1)
       }
       return
     }
 
     if (currentTime > parseInt(lines[lines.length - 1].startTimeMs)) {
-      if (currentLineIndex !== lines.length - 1) {
-        setCurrentLineIndex(lines.length - 1)
+      if (lyricsCurrentLineIndex !== lines.length - 1) {
+        setlyricsCurrentLineIndex(lines.length - 1)
       }
       return
     }
@@ -190,10 +191,10 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
       }
     }
 
-    if (foundIndex !== currentLineIndex) {
-      setCurrentLineIndex(foundIndex)
+    if (foundIndex !== lyricsCurrentLineIndex) {
+      setlyricsCurrentLineIndex(foundIndex)
     }
-  }, [playerData, lyricsData, currentLineIndex])
+  }, [playerData, lyricsData, lyricsCurrentLineIndex])
 
   const hasTrackChanged = useCallback((newData: PlaybackData) => {
     const currentTrack = playerDataRef.current?.track
@@ -212,7 +213,6 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
       try {
         const { type, action, data } = JSON.parse(e.data)
         if (type !== 'playback') return
-        console.log('Received playback data:', action, data)
         if (
           action === 'trackPlayed' ||
           action === 'playlistTracks' ||
@@ -228,6 +228,7 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
         }
 
         if (action === 'lyrics') {
+          setLyricsLoading(false)
           setLyricsData(data)
           return
         }
@@ -320,6 +321,7 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
               JSON.stringify({ type: 'playback', action: 'image' })
             )
             if (showLyricsWidget) {
+              setLyricsLoading(true)
               socket?.send(
                 JSON.stringify({ type: 'playback', action: 'lyrics' })
               )
@@ -356,27 +358,14 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
     socketRef.current = socket
     if (ready === true && socket) {
       socket.addEventListener('message', handleSocketMessage)
-      const refreshInterval = setInterval(
-        () => {
-          if (socket && socket.readyState === WebSocket.OPEN) {
-            socket.send(
-              JSON.stringify({
-                type: 'playback'
-              })
-            )
-          }
-        },
-        playbackSyncTime ? playbackSyncTime * 1000 : 5000
-      )
       return () => {
         socket.removeEventListener('message', handleSocketMessage)
-        clearInterval(refreshInterval)
       }
     }
     return () => {
       socketRef.current = null
     }
-  }, [ready, socket, handleSocketMessage, playbackSyncTime])
+  }, [ready, socket, handleSocketMessage])
 
   useEffect(() => {
     if (socket && socket.readyState === WebSocket.OPEN) {
@@ -388,27 +377,61 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
     }
   }, [socket])
 
+  const updateRef = useRef<{
+    startTime: number
+    initialProgress: number
+  } | null>(null)
+
   useEffect(() => {
-    if (!playerData || !playerData.isPlaying) return
-    const interval = setInterval(() => {
+    if (!playerData || !playerData.isPlaying) {
+      updateRef.current = null
+      return
+    }
+
+    const updateInfo = {
+      startTime: performance.now(),
+      initialProgress: playerData.track.duration.current
+    }
+    updateRef.current = updateInfo
+
+    let intervalId: number
+
+    const updateProgress = () => {
+      // Check if this update is still valid
+      if (updateRef.current !== updateInfo) return
+
+      const currentTime = performance.now()
+      const elapsedMs = currentTime - updateInfo.startTime
+      const newProgress = updateInfo.initialProgress + elapsedMs
+
       setPlayerData(p => {
-        if (!p || p.track.duration.current >= p.track.duration.total)
+        if (!p || newProgress >= p.track.duration.total) {
           return p
+        }
         return {
           ...p,
           track: {
             ...p.track,
             duration: {
               ...p.track.duration,
-              current: p.track.duration.current + 1000
+              current: newProgress
             }
           }
         }
       })
-    }, 1000)
+
+      if (updateRef.current === updateInfo) {
+        intervalId = window.setTimeout(updateProgress, 1000)
+      }
+    }
+
+    intervalId = window.setTimeout(updateProgress, 1000)
 
     return () => {
-      clearInterval(interval)
+      if (updateRef.current === updateInfo) {
+        updateRef.current = null
+      }
+      window.clearTimeout(intervalId)
     }
   }, [playerData])
 
@@ -438,6 +461,21 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
     [socket]
   )
 
+  const resetTrackCurrentTime = () => {
+    setPlayerData(p => {
+      return {
+        ...p!,
+        track: {
+          ...p!.track,
+          duration: {
+            ...p!.track.duration,
+            current: 0
+          }
+        }
+      }
+    })
+  }
+
   const actions = {
     playPause: () => {
       if (playerDataRef.current === null) return
@@ -456,10 +494,12 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
     },
     skipForward: () => {
       if (playerDataRef.current === null) return
+      resetTrackCurrentTime()
       sendSocketCommand('playback', 'next')
     },
     skipBackward: () => {
       if (playerDataRef.current === null) return
+      resetTrackCurrentTime()
       sendSocketCommand('playback', 'previous')
     },
     setVolume: (volume: number, deviceId?: string) => {
@@ -555,7 +595,8 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
         playerData,
         playerDataRef,
         lyricsData,
-        currentLineIndex,
+        lyricsLoading,
+        lyricsCurrentLineIndex,
         actions,
         playlistsData,
         albumsData,

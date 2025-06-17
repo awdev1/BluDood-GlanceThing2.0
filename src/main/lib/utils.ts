@@ -1,6 +1,5 @@
 import { exec } from 'child_process'
 import { app, dialog } from 'electron'
-import { platform } from 'os'
 import crypto from 'crypto'
 import path from 'path'
 import net from 'net'
@@ -118,64 +117,76 @@ export async function findOpenPort() {
 }
 
 export function getParsedPlatformCommand(command: string) {
-  const os = platform()
+  const platform = process.platform
 
-  switch (os) {
-    case 'darwin':
-      return { cmd: command, shell: '/bin/sh' }
-
-    default:
-      return { cmd: `& ${command}`, shell: 'powershell.exe' }
+  if (platform === 'darwin') {
+    return { cmd: command, shell: '/bin/sh' }
+  } else if (platform === 'win32') {
+    return { cmd: `& ${command}`, shell: 'powershell.exe' }
+  } else if (platform === 'linux') {
+    return { cmd: command, shell: '/bin/sh' }
+  } else {
+    return null
   }
 }
 
 export function getLockPlatformCommand() {
-  const os = platform()
+  const platform = process.platform
 
-  switch (os) {
-    case 'darwin':
-      return {
-        cmd: 'pmset displaysleepnow',
-        shell: '/bin/sh'
-      }
-
-    default:
-      return {
-        cmd: 'rundll32.exe user32.dll,LockWorkStation',
-        shell: 'powershell.exe'
-      }
+  if (platform === 'darwin') {
+    return {
+      cmd: 'pmset displaysleepnow',
+      shell: '/bin/sh'
+    }
+  } else if (platform === 'win32') {
+    return {
+      cmd: 'rundll32.exe user32.dll,LockWorkStation',
+      shell: 'powershell.exe'
+    }
+  } else if (platform === 'linux') {
+    return {
+      cmd: 'xdg-screensaver lock',
+      shell: '/bin/sh'
+    }
+  } else {
+    return null
   }
 }
 
 export function getPlatformADB() {
-  const os = platform()
+  const platform = process.platform
 
-  switch (os) {
-    case 'darwin':
-      return {
-        downloadURL:
-          'https://dl.google.com/android/repository/platform-tools-latest-darwin.zip',
-        executable: 'adb'
-      }
-
-    default:
-      return {
-        downloadURL:
-          'https://dl.google.com/android/repository/platform-tools-latest-windows.zip',
-        executable: 'adb.exe'
-      }
+  if (platform === 'darwin') {
+    return {
+      url: 'https://dl.google.com/android/repository/platform-tools-latest-darwin.zip',
+      cmd: 'adb'
+    }
+  } else if (platform === 'win32') {
+    return {
+      url: 'https://dl.google.com/android/repository/platform-tools-latest-windows.zip',
+      cmd: 'adb.exe'
+    }
+  } else if (platform === 'linux') {
+    return {
+      url: 'https://dl.google.com/android/repository/platform-tools-latest-linux.zip',
+      cmd: 'adb'
+    }
+  } else {
+    return null
   }
 }
 
-export function getPlatformTar() {
-  const os = platform()
+export function buildUnzipCommand(src: string, dest: string) {
+  const platform = process.platform
 
-  switch (os) {
-    case 'win32':
-      return `${process.env.SystemRoot}\\System32\\tar.exe`
-
-    default:
-      return 'tar'
+  if (platform === 'win32') {
+    return `${process.env.SystemRoot}\\System32\\tar.exe -xf ${src} -C "${dest}"`
+  } else if (platform === 'darwin') {
+    return `tar -xf ${src} -C "${dest}"`
+  } else if (platform === 'linux') {
+    return `unzip ${src} -d "${dest}"`
+  } else {
+    return null
   }
 }
 

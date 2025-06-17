@@ -46,7 +46,6 @@ interface AppSettings {
   showWeatherDescriptionStatusBar: boolean
   showWeatherIconStatusBar: boolean
   showHumidityStatusBar: boolean
-  playbackSyncTime: number
 }
 
 interface AppStateContextProps extends AppSettings {
@@ -87,8 +86,7 @@ const defaultSettings: AppSettings = {
   showHighLowTempStatusBar: true,
   showWeatherDescriptionStatusBar: true,
   showWeatherIconStatusBar: true,
-  showHumidityStatusBar: true,
-  playbackSyncTime: 5
+  showHumidityStatusBar: true
 }
 
 const AppStateContext = createContext<AppStateContextProps>({

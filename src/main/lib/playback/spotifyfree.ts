@@ -3,13 +3,12 @@ import { WebSocket } from 'ws'
 import { TOTP } from 'totp-generator'
 
 import { BasePlaybackHandler } from './BasePlaybackHandler.js'
+import { log, LogLevel, base32FromBytes, cleanBuffer } from '../utils.js'
 import {
-  log,
-  LogLevel,
-  base32FromBytes,
-  cleanBuffer,
-  intToRgb
-} from '../utils.js'
+  getLyrics,
+  initializeLyricsCache,
+  cleanupLyricsCache
+} from '../lyric.js'
 
 import {
   Action,
@@ -22,7 +21,6 @@ import {
   SpotifyTrackItem,
   SpotifyEpisodeItem
 } from '../../types/spotifyResponse'
-import { Cache } from '../cache.js'
 
 async function getToken(discordToken: string, connectionId: string) {
   const res = await axios.get(
@@ -126,38 +124,6 @@ export async function fetchImage(id: string) {
   return `data:image/jpeg;base64,${Buffer.from(res.data).toString('base64')}`
 }
 
-// Parse LRC format into LyricsResponse lines
-function parseLrcLyrics(lrc: string): {
-  lines: LyricsResponse['lyrics']['lines']
-} {
-  const lines: LyricsResponse['lyrics']['lines'] = []
-  const lrcLines = lrc.split('\n').filter(line => line.trim())
-
-  for (const line of lrcLines) {
-    const match = line.match(/\[(\d{2}):(\d{2})\.(\d{2,3})\](.*)/)
-    if (!match) continue
-
-    const [, minutes, seconds, milliseconds, text] = match
-    const startTimeMs =
-      (parseInt(minutes) * 60 + parseInt(seconds)) * 1000 +
-      parseInt(milliseconds.padEnd(3, '0'))
-    lines.push({
-      startTimeMs: startTimeMs.toString(),
-      words: text.trim()
-    })
-  }
-
-  // Sort lines by startTimeMs to ensure correct order
-  lines.sort((a, b) => parseInt(a.startTimeMs) - parseInt(b.startTimeMs))
-
-  // Add endTimeMs for each line (start of next line or undefined for last)
-  for (let i = 0; i < lines.length - 1; i++) {
-    lines[i].endTimeMs = lines[i + 1].startTimeMs
-  }
-
-  return { lines }
-}
-
 const defaultSupportedActions: Action[] = [
   'play',
   'pause',
@@ -243,17 +209,9 @@ class SpotifyHandler extends BasePlaybackHandler {
   deviceId: string | null = null
   ws: WebSocket | null = null
   instance: AxiosInstance
-  lyricsCache: Cache<LyricsResponse>
-  cacheCleanupInterval: NodeJS.Timeout | null = null
 
   constructor() {
     super()
-    // 24 hours expiration for lyrics cache
-    this.lyricsCache = new Cache<LyricsResponse>(
-      24 * 60 * 60 * 1000,
-      'spotify_lyrics_cache',
-      'lyrics'
-    )
 
     this.instance = axios.create({
       baseURL: 'https://api.spotify.com/v1',
@@ -302,14 +260,7 @@ class SpotifyHandler extends BasePlaybackHandler {
       throw new Error('Discord token and connection ID are required')
     }
 
-    this.lyricsCache.load()
-    this.cacheCleanupInterval = setInterval(
-      () => {
-        this.lyricsCache.clean()
-        this.lyricsCache.save()
-      },
-      60 * 60 * 1000
-    )
+    initializeLyricsCache()
 
     this.accessToken = await getToken(
       this.config.discordToken,
@@ -415,8 +366,7 @@ class SpotifyHandler extends BasePlaybackHandler {
 
   async cleanup(): Promise<void> {
     log('Cleaning up SpotifyFree handler', 'SpotifyFree', LogLevel.INFO)
-    this.lyricsCache.save()
-    this.lyricsCache.clear()
+    cleanupLyricsCache()
     if (!this.ws) return
     this.ws.removeAllListeners()
     this.ws.close()
@@ -515,137 +465,10 @@ class SpotifyHandler extends BasePlaybackHandler {
   }
 
   async getLyrics(): Promise<LyricsResponse | null> {
-    const current = await this.getCurrent()
-    if (!current) return null
-    if (current.currently_playing_type === 'episode') {
-      return { message: 'No lyrics for podcast', source: 'none' }
-    }
+    const playbackData = await this.getPlayback()
+    if (!playbackData) return null
 
-    const item = current.item as SpotifyTrackItem
-    const trackId = item.id
-    const artist = item.artists[0]?.name || ''
-    const title = item.name
-    const album = item.album.name
-    const now = Date.now()
-
-    // Use trackId as cache key for consistency
-    const cacheKey = trackId
-    try {
-      const cachedLyrics = this.lyricsCache.get(cacheKey)
-      if (
-        cachedLyrics &&
-        now - cachedLyrics.timestamp < this.lyricsCache.expirationAt()
-      ) {
-        log(
-          `Using cached lyrics for track: ${trackId}`,
-          'SpotifyFree',
-          LogLevel.DEBUG
-        )
-        return cachedLyrics.data
-      }
-
-      // Try LRCLIB first
-      log(
-        `Fetching lyrics from LRCLIB for track: ${title} by ${artist}`,
-        'SpotifyFree',
-        LogLevel.INFO
-      )
-      const lrclibRes = await axios.get('https://lrclib.net/api/get', {
-        params: {
-          artist_name: artist,
-          track_name: title,
-          album_name: album
-        },
-        validateStatus: () => true
-      })
-
-      if (lrclibRes.status === 200 && lrclibRes.data.syncedLyrics) {
-        const { lines } = parseLrcLyrics(lrclibRes.data.syncedLyrics)
-        const lyricsResponse: LyricsResponse = {
-          lyrics: {
-            syncType: 'LINE_SYNCED',
-            lines
-          },
-          source: 'lrclib'
-        }
-        this.lyricsCache.set(cacheKey, lyricsResponse)
-        return lyricsResponse
-      }
-
-      // Fallback to Spotify color-lyrics if sp_dc is available
-      if (this.config?.sp_dc) {
-        log(
-          `LRCLIB failed, falling back to Spotify for track: ${trackId}`,
-          'SpotifyFree',
-          LogLevel.INFO
-        )
-        let url = `https://spclient.wg.spotify.com/color-lyrics/v2/track/${trackId}`
-        if (item.album.images[0]?.url) {
-          url += `/image/${encodeURIComponent(item.album.images[0].url)}`
-        }
-        url += '?format=json&vocalRemoval=false&market=from_token'
-
-        const fetchSpotifyLyrics = async (): Promise<unknown> => {
-          return await axios.get(url, {
-            headers: {
-              Authorization: `Bearer ${this.webToken || this.accessToken}`,
-              'app-platform': 'WebPlayer'
-            },
-            validateStatus: () => true
-          })
-        }
-
-        let res = await fetchSpotifyLyrics()
-
-        if (res.status === 401 && this.config.sp_dc) {
-          log(
-            'Received 401 error, refreshing webToken and retrying',
-            'SpotifyFree',
-            LogLevel.WARN
-          )
-          try {
-            this.webToken = await getWebToken(this.config.sp_dc)
-            log(
-              'Successfully refreshed webToken',
-              'SpotifyFree',
-              LogLevel.DEBUG
-            )
-            res = await fetchSpotifyLyrics()
-          } catch (refreshError) {
-            log(
-              `Failed to refresh webToken: ${refreshError}`,
-              'SpotifyFree',
-              LogLevel.ERROR
-            )
-            throw new Error(`Failed to refresh webToken: ${refreshError}`)
-          }
-        }
-
-        if (res.status === 200) {
-          if (res.data.colors) {
-            res.data.colors = {
-              background: intToRgb(res.data.colors?.background) ?? 0,
-              text: intToRgb(res.data.colors?.text) ?? 0,
-              highlightText: intToRgb(res.data.colors?.highlightText) ?? 0
-            }
-          }
-          res.data.source = 'spotify'
-          this.lyricsCache.set(cacheKey, res.data)
-          return res.data
-        }
-      }
-
-      throw new Error('Lyrics not found')
-    } catch (error) {
-      log(`Error fetching lyrics: ${error}`, 'SpotifyFree', LogLevel.ERROR)
-      const noLyricsMsg = 'No lyrics for this track'
-      const noLyricsResponse: LyricsResponse = {
-        message: noLyricsMsg,
-        source: 'none'
-      }
-      this.lyricsCache.set(cacheKey, noLyricsResponse)
-      return noLyricsResponse
-    }
+    return getLyrics(playbackData)
   }
 }
 

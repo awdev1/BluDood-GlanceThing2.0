@@ -4,8 +4,8 @@ import path from 'path'
 import fs from 'fs'
 
 import {
+  buildUnzipCommand,
   execAsync,
-  getPlatformTar,
   isDev,
   log,
   LogLevel
@@ -67,9 +67,13 @@ export async function getWebAppDir() {
 
   if (!fs.existsSync(extractPath)) fs.mkdirSync(extractPath)
 
-  const extract = await execAsync(
-    `${getPlatformTar()} -xf ${zipPath} -C ${extractPath}`
-  ).catch(() => null)
+  const unzipCommand = buildUnzipCommand(zipPath, extractPath)
+  if (!unzipCommand) {
+    log('Failed to find unzip command for platform', 'adb', LogLevel.ERROR)
+    throw new Error('adb_platform_not_found')
+  }
+
+  const extract = await execAsync(unzipCommand).catch(() => null)
 
   if (extract === null) {
     log('Failed to extract client webapp', 'Client Webapp', LogLevel.ERROR)
@@ -111,9 +115,13 @@ export async function importCustomWebApp() {
 
   log('Extracting custom client', 'Client Webapp')
 
-  const extract = await execAsync(
-    `${getPlatformTar()} -xf ${target} -C ${clientFolder}`
-  ).catch(() => null)
+  const unzipCommand = buildUnzipCommand(target, clientFolder)
+  if (!unzipCommand) {
+    log('Failed to find unzip command for platform', 'adb', LogLevel.ERROR)
+    throw new Error('adb_platform_not_found')
+  }
+
+  const extract = await execAsync(unzipCommand).catch(() => null)
 
   fs.rmSync(target)
 

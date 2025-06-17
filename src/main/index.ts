@@ -12,7 +12,6 @@ import {
 } from 'electron'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { join } from 'path'
-import os from 'os'
 
 import {
   getPlaybackHandlerConfig,
@@ -338,7 +337,7 @@ async function setupIpcHandlers() {
       )
     })
 
-    setTimeout(interval, 5000)
+    setTimeout(interval, 750)
   }
 
   interval()
@@ -481,7 +480,7 @@ async function setupIpcHandlers() {
 
 async function setupTray() {
   const icon =
-    os.platform() === 'darwin'
+    process.platform === 'darwin'
       ? nativeImage
           .createFromPath(`${resourceFolder}/tray.png`)
           .resize({ height: 24, width: 24 })
@@ -521,7 +520,7 @@ async function setupTray() {
   )
 
   tray.on('click', () => {
-    if (os.platform() === 'darwin') return
+    if (process.platform === 'darwin') return
     if (mainWindow) {
       mainWindow.show()
     } else {

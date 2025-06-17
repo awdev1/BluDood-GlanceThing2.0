@@ -28,7 +28,8 @@ const Playback: React.FC<PlaybackProps> = ({ onStepComplete }) => {
 
   async function complete() {
     await window.api.setStorageValue('playbackHandler', selectedProvider)
-    await window.api.restartPlaybackHandler()
+    if ((await window.api.getStorageValue('setupComplete')) === true)
+      await window.api.restartPlaybackHandler()
     onStepComplete()
   }
 

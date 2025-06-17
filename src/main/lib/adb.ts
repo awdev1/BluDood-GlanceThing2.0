@@ -5,10 +5,10 @@ import path from 'path'
 import fs from 'fs'
 
 import {
+  buildUnzipCommand,
   execAsync,
   getLogLevel,
   getPlatformADB,
-  getPlatformTar,
   log,
   LogLevel
 } from './utils.js'
@@ -21,10 +21,15 @@ export async function getAdbExecutable() {
 
   if (res && platform() !== 'darwin') return 'adb'
 
-  const { downloadURL, executable } = getPlatformADB()
+  const adbInfo = getPlatformADB()
+  if (!adbInfo) {
+    log('Failed to find adb for platform', 'adb', LogLevel.ERROR)
+    throw new Error('adb_platform_not_found')
+  }
+  const { url, cmd } = adbInfo
   const userDataPath = app.getPath('userData')
   const platformToolsPath = path.join(userDataPath, 'platform-tools')
-  const adbPath = path.join(platformToolsPath, executable)
+  const adbPath = path.join(platformToolsPath, cmd)
 
   if (fs.existsSync(adbPath)) return `"${adbPath}"`
 
@@ -37,7 +42,7 @@ export async function getAdbExecutable() {
 
   if (fs.existsSync(downloadPath)) fs.unlinkSync(downloadPath)
 
-  const download = await axios.get(downloadURL, {
+  const download = await axios.get(url, {
     responseType: 'stream',
     validateStatus: () => true
   })
@@ -51,16 +56,20 @@ export async function getAdbExecutable() {
 
   download.data.pipe(writer)
 
-  await new Promise((resolve, reject) => {
+  await new Promise<void>((resolve, reject) => {
     writer.on('finish', resolve)
     writer.on('error', reject)
   })
 
   log('Downloaded ADB!', 'adb')
 
-  const extract = await execAsync(
-    `${getPlatformTar()} -xf ${downloadPath} -C "${userDataPath}"`
-  )
+  const unzipCommand = buildUnzipCommand(downloadPath, userDataPath)
+  if (!unzipCommand) {
+    log('Failed to find unzip command for platform', 'adb', LogLevel.ERROR)
+    throw new Error('adb_platform_not_found')
+  }
+
+  const extract = await execAsync(unzipCommand)
 
   if (extract === null) {
     log('Failed to extract adb', 'adb')
@@ -299,7 +308,7 @@ export async function forwardSocketServer(device: string | null) {
   const adb = await getAdbExecutable()
   const port = await getServerPort()
 
-  await execAsync(`${adb} -s ${device} reverse tcp:1337 tcp:${port}`)
+  await execAsync(`${adb} -s ${device} reverse tcp:8000 tcp:${port}`)
 
   log('Forwarded socket server!', 'adb', LogLevel.DEBUG)
 }

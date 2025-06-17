@@ -20,7 +20,7 @@ let port: number | null = null
 export async function getServerPort() {
   if (port) return port
 
-  port = isDev() ? 1337 : await findOpenPort()
+  port = isDev() ? 8000 : await findOpenPort()
 
   return port
 }

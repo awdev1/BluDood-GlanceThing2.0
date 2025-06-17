@@ -16,9 +16,9 @@ interface LyricsProps {
 }
 
 const Lyrics: React.FC<LyricsProps> = ({ visible, sectionActive }) => {
-  const { lyricsData, currentLineIndex } = useContext(MediaContext)
+  const { lyricsData, lyricsLoading, lyricsCurrentLineIndex } =
+    useContext(MediaContext)
   const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState<boolean>(false)
   const [hasLyrics, setHasLyrics] = useState<boolean>(false)
   const [syncLyric, setSyncLyric] = useState<boolean>(false)
 
@@ -73,10 +73,10 @@ const Lyrics: React.FC<LyricsProps> = ({ visible, sectionActive }) => {
   useEffect(() => {
     if (visible && sectionActive && syncLyric) {
       requestAnimationFrame(() => {
-        if (currentLineIndex >= 0) {
+        if (lyricsCurrentLineIndex >= 0) {
           scrollToActiveLine()
         }
-        if (currentLineIndex === -1 && lyricsContentRef.current) {
+        if (lyricsCurrentLineIndex === -1 && lyricsContentRef.current) {
           lyricsContentRef.current.scrollTo({
             top: 0,
             behavior: 'smooth'
@@ -85,7 +85,7 @@ const Lyrics: React.FC<LyricsProps> = ({ visible, sectionActive }) => {
       })
     }
   }, [
-    currentLineIndex,
+    lyricsCurrentLineIndex,
     scrollToActiveLine,
     visible,
     sectionActive,
@@ -133,7 +133,6 @@ const Lyrics: React.FC<LyricsProps> = ({ visible, sectionActive }) => {
       if (lyricsData?.lyrics?.syncType === 'LINE_SYNCED') {
         setSyncLyric(true)
       }
-      setLoading(false)
       setError(null)
       setHasLyrics(
         !!lyricsData?.lyrics?.lines && lyricsData.lyrics.lines.length > 0
@@ -181,8 +180,8 @@ const Lyrics: React.FC<LyricsProps> = ({ visible, sectionActive }) => {
         {lyricsData.lyrics.lines.map((line, index) => (
           <div
             key={index}
-            className={`${styles.line} ${index === currentLineIndex ? styles.activeLine : ''} ${index < currentLineIndex ? styles.passedLine : ''}`}
-            ref={index === currentLineIndex ? activeLineRef : null}
+            className={`${styles.line} ${index === lyricsCurrentLineIndex ? styles.activeLine : ''} ${index < lyricsCurrentLineIndex ? styles.passedLine : ''}`}
+            ref={index === lyricsCurrentLineIndex ? activeLineRef : null}
           >
             <div className={styles.lineContent}>{line.words}</div>
           </div>
@@ -208,7 +207,7 @@ const Lyrics: React.FC<LyricsProps> = ({ visible, sectionActive }) => {
       )
     }
 
-    if (loading) {
+    if (lyricsLoading) {
       return <div className={styles.loading}>Loading lyrics...</div>
     }
 

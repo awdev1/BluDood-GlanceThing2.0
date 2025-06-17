@@ -32,7 +32,7 @@ const SocketContextProvider = ({
   const [firstLoad, setFirstLoad] = useState(true)
 
   const connect = useCallback(() => {
-    ws.current = new WebSocket('ws://localhost:1337')
+    ws.current = new WebSocket('ws://localhost:8000')
 
     ws.current.onopen = async () => {
       const pass = await getSocketPassword()

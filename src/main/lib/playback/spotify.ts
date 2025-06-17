@@ -25,6 +25,12 @@ import {
   SpotifyEpisodeItem
 } from '../../types/spotifyResponse.js'
 import { Cache } from '../cache.js'
+import {
+  initializeLyricsCache,
+  cleanupLyricsCache,
+  lyricsCache,
+  getLyrics as getFallbackLyrics
+} from '../lyric.js'
 
 async function subscribe(connection_id: string, token: string) {
   return await axios.put(
@@ -38,10 +44,7 @@ async function subscribe(connection_id: string, token: string) {
   )
 }
 
-async function generateTotp(): Promise<{
-  otp: string
-  timestamp: number
-}> {
+async function generateTotp(): Promise<string> {
   const secretSauce = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
 
   const secretCipherBytes = [
@@ -56,40 +59,31 @@ async function generateTotp(): Promise<{
 
   const secret = base32FromBytes(secretBytes, secretSauce)
 
-  const res = await axios.get('https://open.spotify.com/server-time')
-  const timestamp = res.data.serverTime * 1000
+  const totp = TOTP.generate(secret)
 
-  const totp = TOTP.generate(secret, { timestamp })
-
-  return {
-    otp: totp.otp,
-    timestamp
-  }
+  return totp.otp
 }
 
 export async function getWebToken(sp_dc: string) {
   const totp = await generateTotp()
 
-  const res = await axios.get(
-    'https://open.spotify.com/get_access_token',
-    {
-      headers: {
-        cookie: `sp_dc=${sp_dc};`,
-        'user-agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'
-      },
-      params: {
-        reason: 'init',
-        productType: 'web-player',
-        totp: totp.otp,
-        totpVer: '5',
-        ts: totp.timestamp
-      },
-      validateStatus: () => true
-    }
-  )
+  const res = await axios.get('https://open.spotify.com/api/token', {
+    headers: {
+      cookie: `sp_dc=${sp_dc};`,
+      'user-agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'
+    },
+    params: {
+      reason: 'init',
+      productType: 'web-player',
+      totp,
+      totpVer: '5'
+    },
+    validateStatus: () => true
+  })
 
   if (res.status !== 200) throw new Error('Invalid sp_dc')
+
   if (!res.data.accessToken) throw new Error('Invalid sp_dc')
 
   return res.data.accessToken
@@ -230,18 +224,11 @@ class SpotifyHandler extends BasePlaybackHandler {
   ws: WebSocket | null = null
   instance: AxiosInstance | null = null
 
-  lyricsCache: Cache<LyricsResponse>
   playlistImageCache: Cache<string>
   cacheCleanupInterval: NodeJS.Timeout | null = null
 
   constructor() {
     super()
-    // 24 hours expiration for lyrics cache
-    this.lyricsCache = new Cache<LyricsResponse>(
-      24 * 60 * 60 * 1000,
-      'spotify_lyrics_cache',
-      'lyrics'
-    )
 
     // 7 days expiration for playlist image cache
     this.playlistImageCache = new Cache<string>(
@@ -284,12 +271,10 @@ class SpotifyHandler extends BasePlaybackHandler {
 
     this.config = config
 
-    this.lyricsCache.load()
+    initializeLyricsCache()
     this.playlistImageCache.load()
     this.cacheCleanupInterval = setInterval(
       () => {
-        this.lyricsCache.clean()
-        this.lyricsCache.save()
         this.playlistImageCache.clean()
         this.playlistImageCache.save()
       },
@@ -352,7 +337,7 @@ class SpotifyHandler extends BasePlaybackHandler {
   }
 
   async start() {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return
+    if (!this.ws) return
     const ping = () => this.ws!.send('{"type":"ping"}')
 
     this.ws.on('open', () => {
@@ -397,14 +382,14 @@ class SpotifyHandler extends BasePlaybackHandler {
     })
 
     this.ws.on('close', () => this.emit('close'))
+
     this.ws.on('error', err => this.emit('error', err))
   }
 
   async cleanup(): Promise<void> {
     log('Cleaning up', 'Spotify')
 
-    this.lyricsCache.save()
-    this.lyricsCache.clear()
+    cleanupLyricsCache()
     this.playlistImageCache.save()
     this.playlistImageCache.clear()
 
@@ -535,15 +520,20 @@ class SpotifyHandler extends BasePlaybackHandler {
     const trackId = item.id
     const now = Date.now()
 
-    const cachedLyrics = this.lyricsCache.get(trackId)
+    const cachedLyrics = lyricsCache.get(trackId)
     if (
       cachedLyrics &&
-      now - cachedLyrics.timestamp < this.lyricsCache.expirationAt()
+      now - cachedLyrics.timestamp < lyricsCache.expirationAt()
     ) {
       return cachedLyrics.data
     }
 
     try {
+      log(
+        `Fetching lyrics from Spotify for track: ${item.name} - ${item.artists[0].name || ''}`,
+        'Lyrics',
+        LogLevel.INFO
+      )
       let url = `https://spclient.wg.spotify.com/color-lyrics/v2/track/${trackId}`
       if (item.album.images[0]?.url) {
         url += `/image/${encodeURIComponent(item.album.images[0].url)}`
@@ -577,25 +567,52 @@ class SpotifyHandler extends BasePlaybackHandler {
         res = await fetchLyrics()
       }
 
-      if (res.status !== 200) {
-        throw new Error(`Failed to fetch lyrics: ${res.status}`)
-      }
-
-      if (res.data.colors) {
-        res.data.colors = {
-          background: intToRgb(res.data.colors?.background) ?? 0,
-          text: intToRgb(res.data.colors?.text) ?? 0,
-          highlightText: intToRgb(res.data.colors?.highlightText) ?? 0
+      if (res.status === 200) {
+        if (res.data.colors) {
+          res.data.colors = {
+            background: intToRgb(res.data.colors?.background) ?? 0,
+            text: intToRgb(res.data.colors?.text) ?? 0,
+            highlightText: intToRgb(res.data.colors?.highlightText) ?? 0
+          }
         }
+
+        lyricsCache.set(trackId, res.data)
+        return res.data
       }
 
-      this.lyricsCache.set(trackId, res.data)
-      return res.data
+      throw new Error(`Spotify API failed: ${res.status}`)
     } catch (error) {
-      log(`Error fetching lyrics: ${error}`, 'Spotify', LogLevel.ERROR)
+      log(
+        `Spotify lyrics failed, trying fallback: ${error}`,
+        'Spotify',
+        LogLevel.WARN
+      )
+
+      // Fallback to lyric.ts implementation
+      try {
+        const playbackData = filterData({
+          ...current,
+          item: current.item as SpotifyTrackItem
+        })
+        if (playbackData) {
+          const fallbackResult = await getFallbackLyrics(playbackData)
+          if (fallbackResult && !fallbackResult.message) {
+            return fallbackResult
+          }
+        }
+      } catch (fallbackError) {
+        log(
+          `Fallback lyrics also failed: ${fallbackError}`,
+          'Spotify',
+          LogLevel.ERROR
+        )
+      }
+
+      // If both fail, cache and return no lyrics message
       const noLyricsMsg = 'No lyrics for this track'
-      this.lyricsCache.set(trackId, { message: noLyricsMsg })
-      return { message: noLyricsMsg }
+      const noLyricsResponse = { message: noLyricsMsg }
+      lyricsCache.set(trackId, noLyricsResponse)
+      return noLyricsResponse
     }
   }
 

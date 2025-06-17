@@ -327,67 +327,6 @@ const CoordinatesInputSetting: React.FC<{
   )
 }
 
-const InputSetting: React.FC<{
-  label: string
-  description?: string
-  defaultValue?: string | number
-  value?: string | number
-  submitLabel?: string
-  placeholder?: string
-  min?: number
-  max?: number
-  step?: number
-  onChange?: (value: string | number) => void
-  onSubmit?: (value: string | number) => void
-  disabled?: boolean
-}> = ({
-  label,
-  description,
-  defaultValue,
-  value,
-  submitLabel,
-  placeholder,
-  min,
-  max,
-  step,
-  onChange,
-  onSubmit,
-  disabled
-}) => {
-  const input = useRef<HTMLInputElement>(null)
-
-  return (
-    <div className={styles.coordinatesInput}>
-      <div className={styles.text}>
-        <p className={styles.label}>{label}</p>
-        <p className={styles.description}>{description}</p>
-      </div>
-      <div className={styles.form}>
-        <input
-          type="text"
-          defaultValue={defaultValue}
-          value={value}
-          disabled={disabled}
-          onChange={onChange ? e => onChange(e.target.value) : undefined}
-          ref={input}
-          min={min}
-          max={max}
-          step={step}
-          placeholder={placeholder || ''}
-        />
-        {onSubmit && (
-          <button
-            disabled={disabled}
-            onClick={() => onSubmit(input?.current!.value)}
-          >
-            {submitLabel || 'Submit'}
-          </button>
-        )}
-      </div>
-    </div>
-  )
-}
-
 const GeneralTab: React.FC = () => {
   const navigate = useNavigate()
   const [loaded, setLoaded] = useState(false)
@@ -455,7 +394,6 @@ const ClientTab: React.FC = () => {
     autoSwitchToLyrics?: boolean
     showTimeInStatusBar?: boolean
     showWeatherInStatusBar?: boolean
-    playbackSyncTime?: number
   }>({})
 
   const [autoBrightness, setAutoBrightness] = useState(false)
@@ -514,10 +452,7 @@ const ClientTab: React.FC = () => {
             true) === true,
         showWeatherInStatusBar:
           ((await window.api.getStorageValue('showWeatherInStatusBar')) ??
-            true) === true,
-        playbackSyncTime: ((await window.api.getStorageValue(
-          'playbackSyncTime'
-        )) ?? 10) as number
+            true) === true
       }
       setAutoBrightness(settings.current.autoBrightness ?? false)
       setSleepMethod(settings.current.sleepMethod ?? 'sleep')
@@ -811,18 +746,6 @@ const ClientTab: React.FC = () => {
             )}
           </div>
         )}
-        <h3>Playback</h3>
-        <InputSetting
-          label="Playback Sync Time"
-          description="Time in seconds to wait before syncing playback with the server"
-          defaultValue={settings.current.playbackSyncTime ?? 5}
-          min={1}
-          max={60}
-          step={1}
-          onSubmit={value =>
-            window.api.setStorageValue('playbackSyncTime', value as number)
-          }
-        />
         {patches && isDev ? (
           <div className={styles.patches}>
             <h2>Patches</h2>

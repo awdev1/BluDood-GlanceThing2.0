@@ -1,69 +1,95 @@
-.home {
+.container {
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 100vh;
-  animation: appear 500ms ease;
+  background-color: rgb(0, 0, 0);
+  animation: fadeIn 400ms ease;
 }
 
-.home img {
-  width: 128px;
-  height: 128px;
+.card {
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  max-width: 500px;
+  width: 100%;
+}
+
+
+.logo {
+  width: 80px;
+  height: 80px;
   margin-bottom: 20px;
+}
+
+.title {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: white;
+  margin-bottom: 10px;
+}
+
+.status {
+  font-size: 1rem;
+  color: #aaa;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.button {
+  background-color: #0064ff;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background 0.2s ease;
+}
+
+.button:hover {
+  background-color: #338dff;
+}
+
+.warning {
+  margin-top: 20px;
+  color: #ff9800;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.dangerButton {
+  background-color: #ff4d4d;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.dangerButton:hover {
+  background-color: #ff3333;
+}
+
+.version {
+  font-size: 0.96rem;
+  color: #666;
+  margin-bottom: 8px;
 }
 
 .status {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  font-size: 0.95rem;
 }
 
-.status button {
-  all: unset;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 16px;
-  border-radius: 5px;
-  background-color: #0064ff;
-  cursor: pointer;
-  transition: opacity 200ms ease;
-}
-
-.status button span {
-  font-size: 24px;
-  margin-left: 5px;
-}
-
-.status button:hover {
-  opacity: 0.8;
-}
-
-.notice {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  margin-top: 20px;
-}
-
-.notice p {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.notice p span {
-  color: #0064ff;
-}
-
-.notice[data-type='warning'] p span {
-  color: #ff9800;
-}
-
-@keyframes appear {
+@keyframes fadeIn {
   from {
     opacity: 0;
     transform: translateY(10px);

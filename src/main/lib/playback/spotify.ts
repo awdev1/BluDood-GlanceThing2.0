@@ -48,7 +48,7 @@ async function generateTotp(): Promise<string> {
   const secretSauce = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
 
   const secretCipherBytes = [
-    12, 56, 76, 33, 88, 44, 88, 33, 78, 78, 11, 66, 22, 22, 55, 69, 54
+    37, 84, 32, 76, 87, 90, 87, 47, 13, 75, 48, 54, 44, 28, 19, 21, 22
   ].map((e, t) => e ^ ((t % 33) + 9))
 
   const secretBytes = cleanBuffer(
@@ -77,7 +77,7 @@ export async function getWebToken(sp_dc: string) {
       reason: 'init',
       productType: 'web-player',
       totp,
-      totpVer: '5'
+      totpVer: '8'
     },
     validateStatus: () => true
   })
@@ -88,6 +88,7 @@ export async function getWebToken(sp_dc: string) {
 
   return res.data.accessToken
 }
+
 
 export async function refreshAccessToken(
   clientId: string,
@@ -103,7 +104,9 @@ export async function refreshAccessToken(
         refresh_token: refreshToken
       },
       headers: {
-        Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
+        Authorization: `Basic ${Buffer.from(
+          `${clientId}:${clientSecret}`
+        ).toString('base64')}`,
         'Content-Type': 'application/x-www-form-urlencoded'
       },
       validateStatus: () => true
@@ -111,8 +114,10 @@ export async function refreshAccessToken(
   )
 
   if (res.status !== 200) return null
+
   return res.data.access_token
 }
+
 
 const defaultSupportedActions: Action[] = [
   'play',

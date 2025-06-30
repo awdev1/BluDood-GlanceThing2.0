@@ -1,17 +1,12 @@
-import PropTypes from 'prop-types'
-
+import React from 'react'
 import styles from './Loader.module.css'
 
 interface LoaderProps {
-  size?: number
+  className?: string
 }
 
-const Loader: React.FC<LoaderProps> = ({ size = 32 }) => {
-  return <div className={styles.loader} style={{ width: size }} />
-}
-
-Loader.propTypes = {
-  size: PropTypes.number
+const Loader: React.FC<LoaderProps> = ({ className }) => {
+  return <div className={`${styles.loader} ${className || ''}`} aria-label="Loading" role="img" />
 }
 
 export default Loader

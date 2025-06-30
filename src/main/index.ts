@@ -8,10 +8,12 @@ import {
   Notification,
   protocol,
   net,
-  nativeImage
+  nativeImage,
+  dialog
 } from 'electron'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { join } from 'path'
+import axios from 'axios'
 
 import {
   getPlaybackHandlerConfig,
@@ -67,9 +69,57 @@ import {
   removeScreensaverImage,
   hasCustomScreensaverImage
 } from './lib/screensaver.js'
-import { updateWeather } from './lib/weather'
 
 let mainWindow: BrowserWindow | null = null
+
+const UpdateInterval = 1000 * 60 * 60 // Check every hour
+const UpdateURL = 'https://api.github.com/repos/awdev1/BluDood-GlanceThing2.0/releases/latest'
+
+async function checkForUpdates() {
+  try {
+    log('Starting update check', 'Updater', LogLevel.INFO)
+    const response = await axios.get(UpdateURL, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:140.0) Gecko/20100101 Firefox/140.0' }
+  
+    })
+    const latestVersion = response.data.tag_name.replace('v', '')
+    // const latestVersion = '999.0.0' // we using this to test the trigger for update notifications
+    log(`Latest version found: ${latestVersion}`, 'Updater', LogLevel.INFO)
+    const currentVersion = app.getVersion()
+
+    if (latestVersion !== currentVersion) {
+      log(`New version available: ${latestVersion}`, 'Updater', LogLevel.INFO)
+      showUpdateNotification(latestVersion, response.data.html_url)
+    } else {
+      log(`No new updates available. Current version: ${currentVersion}`, 'Updater', LogLevel.INFO)
+
+    }
+  } catch (error) {
+    log(`Error checking for updates`, 'Updater', LogLevel.ERROR)
+    new Notification({
+      title: 'Update Check Failed',
+      body: 'Could not check for updates. Please try again later.',
+      icon: resourceFolder ? `${resourceFolder}/icon.png` : undefined
+    }).show()
+    log('Sent update-check-failed notification', 'Updater', LogLevel.INFO)
+  }
+}
+
+function showUpdateNotification(version: string, releaseUrl: string) {
+
+  const notification = new Notification({
+    title: `Update Available - v${version}`,
+    body: `Hey there! A new version of GlanceThing is available. Click on me to download the update.`,
+    icon: resourceFolder ? `${resourceFolder}/icon.png` : undefined
+  })
+
+  notification.on('click', () => {
+    shell.openExternal(releaseUrl)
+  })
+
+  notification.show()
+  log(`Sent update-available notification for v${version}`, 'Updater', LogLevel.INFO)
+}
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -78,7 +128,7 @@ function createWindow(): void {
     show: false,
     autoHideMenuBar: true,
     ...(process.platform === 'linux'
-      ? { icon: `${resourceFolder}/icon.png` }
+      ? { icon: resourceFolder ? `${resourceFolder}/icon.png` : undefined }
       : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js')
@@ -104,8 +154,10 @@ function createWindow(): void {
 
       new Notification({
         title: 'Still Running!',
-        body: 'GlanceThing has been minimized to the system tray, and is still running in the background!'
+        body: 'GlanceThing has been minimized to the system tray, and is still running in the background!',
+        icon: resourceFolder ? `${resourceFolder}/icon.png` : undefined
       }).show()
+      log('Sent minimized-to-tray notification', 'GlanceThing', LogLevel.INFO)
     }
     mainWindow = null
     app.dock?.hide()
@@ -133,6 +185,7 @@ app.on('second-instance', () => {
 
 app.on('ready', async () => {
   log('Welcome!', 'GlanceThing')
+  log(`App mode: ${isDev() ? 'Development' : 'Production'}`, 'GlanceThing', LogLevel.INFO)
 
   const gotLock = app.requestSingleInstanceLock()
   if (!gotLock) return app.quit()
@@ -177,6 +230,9 @@ app.on('ready', async () => {
 
   if (getStorageValue('launchMinimized') !== true) createWindow()
   else app.dock?.hide()
+
+  await checkForUpdates() 
+  setInterval(checkForUpdates, UpdateInterval) 
 })
 
 app.on('browser-window-created', (_, window) => {
@@ -230,7 +286,9 @@ enum IPCHandler {
   HasCustomScreensaverImage = 'hasCustomScreensaverImage',
   OpenDevTools = 'openDevTools',
   GetChannel = 'getChannel',
-  UpdateWeather = 'updateWeather'
+  UpdateWeather = 'updateWeather',
+  CheckForUpdates = 'checkForUpdates',
+  TestNotification = 'testNotification'
 }
 
 async function setupIpcHandlers() {
@@ -337,7 +395,7 @@ async function setupIpcHandlers() {
       )
     })
 
-    setTimeout(interval, 750)
+    setTimeout(interval, 700)
   }
 
   interval()
@@ -476,15 +534,21 @@ async function setupIpcHandlers() {
   ipcMain.handle(IPCHandler.UpdateWeather, async () => {
     return await updateWeather()
   })
+
+  ipcMain.handle(IPCHandler.CheckForUpdates, async () => {
+    await checkForUpdates()
+  })
+
+
 }
 
 async function setupTray() {
   const icon =
     process.platform === 'darwin'
       ? nativeImage
-          .createFromPath(`${resourceFolder}/tray.png`)
+          .createFromPath(resourceFolder ? `${resourceFolder}/tray.png` : join(__dirname, 'tray.png'))
           .resize({ height: 24, width: 24 })
-      : `${resourceFolder}/tray.png`
+      : resourceFolder ? `${resourceFolder}/tray.png` : join(__dirname, 'tray.png')
   const tray = new Tray(icon)
 
   const contextMenu = Menu.buildFromTemplate([
@@ -494,6 +558,12 @@ async function setupTray() {
     },
     {
       type: 'separator'
+    },
+    {
+      label: 'Check for Updates',
+      click: async () => {
+        await checkForUpdates()
+      }
     },
     {
       label: 'Show',

@@ -1,31 +1,99 @@
-.developer {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  align-items: flex-start;
-  margin: 20px;
-  animation: appear 500ms ease;
+.container {
+  max-width: 700px;
+  margin: 40px auto;
+  padding: 0 20px;
+  font-family: sans-serif;
+  color: white;
+  animation: fadeInUp 500ms ease forwards;
 }
 
-.buttons {
-  display: flex;
-  gap: 10px;
-  align-items: center;
+h1 {
+  font-size: 2rem;
+  margin-bottom: 10px;
+  color: white;
+  animation: fadeIn 700ms ease forwards;
 }
 
-.successMessage {
-  color: #4caf50;
+h2 {
+  font-size: 1.2rem;
+  margin-bottom: 8px;
+  color: white;
+  animation: fadeIn 700ms ease forwards;
+}
+
+.backLink {
+  display: inline-block;
+  margin-bottom: 24px;
+  text-decoration: none;
+  color: #007bff;
+  transition: color 0.2s ease;
+}
+
+.backLink:hover {
+  color: #0056b3;
+}
+
+section {
+  margin-bottom: 32px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #eee;
+  animation: fadeIn 800ms ease forwards;
+}
+
+.group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+button {
+  padding: 8px 16px;
+  background: #007bff;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+  animation: fadeInUp 700ms ease forwards;
+}
+
+
+button.danger {
+  background: #dc3545;
+}
+
+button.danger:hover {
+  background: #a71d2a;
+  transform: scale(1.05);
+}
+
+.success {
+  color: #28a745;
+  font-size: 0.9rem;
   margin-left: 10px;
-  font-weight: 500;
+  animation: fadeIn 900ms ease forwards;
 }
 
-@keyframes appear {
+/* Keyframes */
+
+@keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(15px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }

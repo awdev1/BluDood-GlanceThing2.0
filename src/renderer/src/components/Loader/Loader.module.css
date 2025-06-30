@@ -1,3 +1,9 @@
+.loader {
+  position: relative;
+  width: 24px;
+  height: 24px;
+}
+
 .loader:after {
   display: block;
   content: '';

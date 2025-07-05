@@ -69,6 +69,7 @@ import {
   removeScreensaverImage,
   hasCustomScreensaverImage
 } from './lib/screensaver.js'
+import { updateWeather } from './lib/weather.js'
 
 let mainWindow: BrowserWindow | null = null
 

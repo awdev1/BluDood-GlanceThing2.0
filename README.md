@@ -2,7 +2,7 @@
 
 Your CarThing as a glanceable action pad!
 
-<img src=".github/assets/glancething.png" />
+<img src=".github/assets/glancething.png" width="400"/>
 
 ## Features
 

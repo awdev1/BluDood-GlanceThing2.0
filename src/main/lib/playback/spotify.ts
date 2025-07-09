@@ -45,24 +45,13 @@ async function subscribe(connection_id: string, token: string) {
 }
 
 async function generateTotp(): Promise<string> {
-  const secretSauce = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
+  const secret = "GEYDEMZZGM2TMOJYGI3DQNBUGY4TCMRQGEZDCNBXGEZDEMZUHE2DQMRZGQYTANZXGMZTMNRYG4YA";
 
-  const secretCipherBytes = [
-    37, 84, 32, 76, 87, 90, 87, 47, 13, 75, 48, 54, 44, 28, 19, 21, 22
-  ].map((e, t) => e ^ ((t % 33) + 9))
+  const totp = TOTP.generate(secret);
 
-  const secretBytes = cleanBuffer(
-    new TextEncoder()
-      .encode(secretCipherBytes.join(''))
-      .reduce((acc, val) => acc + val.toString(16).padStart(2, '0'), '')
-  )
-
-  const secret = base32FromBytes(secretBytes, secretSauce)
-
-  const totp = TOTP.generate(secret)
-
-  return totp.otp
+  return totp.otp;
 }
+
 
 export async function getWebToken(sp_dc: string) {
   const totp = await generateTotp()

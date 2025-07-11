@@ -61,6 +61,7 @@ interface AppStateContextProps extends AppSettings {
   setPlayerShown: (shown: boolean) => void
   playlistsShown: boolean
   setPlaylistsShown: (shown: boolean) => void
+  getCurrentServerTime: () => Date
 }
 
 const defaultSettings: AppSettings = {
@@ -102,7 +103,8 @@ const AppStateContext = createContext<AppStateContextProps>({
   playerShown: false,
   setPlayerShown: () => {},
   playlistsShown: false,
-  setPlaylistsShown: () => {}
+  setPlaylistsShown: () => {},
+  getCurrentServerTime: () => new Date()
 })
 
 interface AppStateContextProviderProps {
@@ -164,16 +166,26 @@ const AppStateContextProvider = ({
     setDate(date ?? '')
   }
 
+  const getCurrentServerTime = useCallback(() => {
+    if (!lastServerTime.current) {
+      return new Date()
+    }
+    try {
+      const msElapsed = performance.now() - lastConnectionTime.current
+      return new Date(lastServerTime.current.getTime() + msElapsed)
+    } catch (error) {
+      console.error('Error calculating server time:', error)
+      return new Date()
+    }
+  }, [])
+
   const updateLocalTime = useCallback(() => {
     if (!lastServerTime.current) {
       setTimeDate()
       return
     }
     try {
-      const msElapsed = performance.now() - lastConnectionTime.current
-      const updatedTime = new Date(
-        lastServerTime.current.getTime() + msElapsed
-      )
+      const updatedTime = getCurrentServerTime()
       const formattedDateTime = formatDateTime(
         updatedTime,
         settings.timeFormat,
@@ -184,7 +196,7 @@ const AppStateContextProvider = ({
       console.error('Error updating local time:', error)
       setTimeDate()
     }
-  }, [settings.timeFormat, settings.dateFormat])
+  }, [settings.timeFormat, settings.dateFormat, getCurrentServerTime])
 
   const handleSocketMessage = useCallback((e: MessageEvent) => {
     try {
@@ -273,7 +285,8 @@ const AppStateContextProvider = ({
     playerShown,
     setPlayerShown,
     playlistsShown,
-    setPlaylistsShown
+    setPlaylistsShown,
+    getCurrentServerTime
   }
 
   return (

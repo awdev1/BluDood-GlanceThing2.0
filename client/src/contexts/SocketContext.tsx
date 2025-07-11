@@ -24,83 +24,85 @@ interface SocketContextProviderProps {
   children: React.ReactNode
 }
 
-const SocketContextProvider = ({
-  children
-}: SocketContextProviderProps) => {
+const SocketContextProvider = ({ children }: SocketContextProviderProps) => {
   const [ready, setReady] = useState(false)
-  const ws = useRef<WebSocket | null>(null)
   const [firstLoad, setFirstLoad] = useState(true)
+  const ws = useRef<WebSocket | null>(null)
+
+  const missedPongsRef = useRef(0)
+  const lastPingTime = useRef(0)
+  const frameId = useRef<number | null>(null)
 
   const connect = useCallback(() => {
-    ws.current = new WebSocket('ws://localhost:8000')
+    const socket = new WebSocket('ws://192.168.1.150:8000')
+    ws.current = socket
 
-    ws.current.onopen = async () => {
+    socket.onopen = async () => {
       const pass = await getSocketPassword()
-      if (pass)
-        ws.current?.send(
-          JSON.stringify({
-            type: 'auth',
-            data: pass
-          })
-        )
+      if (pass) {
+        socket.send(JSON.stringify({ type: 'auth', data: pass }))
+      }
       setReady(true)
-      setTimeout(() => {
-        setFirstLoad(false)
-      }, 500)
+      setFirstLoad(false)
     }
 
-    ws.current.onclose = () => {
+    socket.onclose = () => {
       setReady(false)
-      setTimeout(() => {
-        connect()
-      }, 1000)
+      cancelAnimationFrame(frameId.current!)
+      setTimeout(connect, 1000)
     }
   }, [])
 
   useEffect(() => {
     connect()
-
     return () => {
       ws.current?.close()
+      cancelAnimationFrame(frameId.current!)
     }
   }, [connect])
 
-  const missedPongsRef = useRef(0)
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
-
   useEffect(() => {
-    if (!ready) return
+    if (!ready || !ws.current) return
 
-    const sendPing = () => {
-      if (ws.current!.readyState === WebSocket.OPEN) {
-        ws.current!.send(JSON.stringify({ type: 'ping' }))
+    const socket = ws.current
 
-        timeoutRef.current = setTimeout(() => {
-          missedPongsRef.current += 1
-          if (missedPongsRef.current >= 3) {
-            ws.current?.close()
-            ws.current?.onclose?.({} as CloseEvent)
-            missedPongsRef.current = 0
-          }
-        }, 5000)
+    const handleMessage = (e: MessageEvent) => {
+      try {
+        const { type } = JSON.parse(e.data)
+        if (type === 'pong') {
+          missedPongsRef.current = 0
+        }
+      } catch {
+        // Ignore malformed messages
       }
     }
 
-    const handleSocketMessage = (e: MessageEvent) => {
-      const { type } = JSON.parse(e.data)
-      if (type !== 'pong') return
+    socket.addEventListener('message', handleMessage)
 
-      if (timeoutRef.current) clearTimeout(timeoutRef.current)
-      missedPongsRef.current = 0
+    const loop = () => {
+      const now = Date.now()
+
+      if (socket.readyState === WebSocket.OPEN) {
+        if (now - lastPingTime.current > 5000) {
+          socket.send(JSON.stringify({ type: 'ping' }))
+          lastPingTime.current = now
+          missedPongsRef.current += 1
+
+          if (missedPongsRef.current >= 3) {
+            socket.close()
+            return
+          }
+        }
+      }
+
+      frameId.current = requestAnimationFrame(loop)
     }
 
-    ws.current!.addEventListener('message', handleSocketMessage)
-    const interval = setInterval(sendPing, 5000)
+    frameId.current = requestAnimationFrame(loop)
 
     return () => {
-      clearInterval(interval)
-      if (timeoutRef.current) clearTimeout(timeoutRef.current)
-      ws.current!.removeEventListener('message', handleSocketMessage)
+      socket.removeEventListener('message', handleMessage)
+      cancelAnimationFrame(frameId.current!)
     }
   }, [ready])
 

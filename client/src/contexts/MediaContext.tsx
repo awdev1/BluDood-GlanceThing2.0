@@ -120,7 +120,7 @@ interface MediaContextProviderProps {
 
 const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
   const { ready, socket } = useContext(SocketContext)
-  const { showLyricsWidget } = useContext(AppStateContext)
+  const { showLyricsWidget, getCurrentServerTime } = useContext(AppStateContext)
   const socketRef = useRef<WebSocket | null>(null)
 
   const [playerData, setPlayerData] = useState<PlaybackData | null>(null)
@@ -157,7 +157,8 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
     )
       return
 
-    const currentTime = playerData.track?.duration.current
+  const currentTime = (playerData.track?.duration.current ?? 0) + 500 // 0.5s earlier
+
 
     let foundIndex = -1
     const lines = lyricsData.lyrics.lines
@@ -380,6 +381,7 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
   const updateRef = useRef<{
     startTime: number
     initialProgress: number
+    serverTimeAtStart: Date
   } | null>(null)
 
   useEffect(() => {
@@ -390,7 +392,8 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
 
     const updateInfo = {
       startTime: performance.now(),
-      initialProgress: playerData.track.duration.current
+      initialProgress: playerData.track.duration.current,
+      serverTimeAtStart: getCurrentServerTime()
     }
     updateRef.current = updateInfo
 
@@ -398,10 +401,10 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
 
     const updateProgress = () => {
       // Check if this update is still valid
-      if (updateRef.current !== updateInfo) return
+      if (updateRef.current !== updateInfo)  return
 
-      const currentTime = performance.now()
-      const elapsedMs = currentTime - updateInfo.startTime
+      const currentServerTime = getCurrentServerTime()
+      const elapsedMs = currentServerTime.getTime() - updateInfo.serverTimeAtStart.getTime()
       const newProgress = updateInfo.initialProgress + elapsedMs
 
       setPlayerData(p => {
@@ -433,7 +436,7 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
       }
       window.clearTimeout(intervalId)
     }
-  }, [playerData])
+  }, [playerData, getCurrentServerTime])
 
   useEffect(() => {
     playerDataRef.current = playerData

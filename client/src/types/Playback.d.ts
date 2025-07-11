@@ -39,12 +39,17 @@ export interface Track {
   id: string
   name: string
   artists: string[]
-  duration_ms: number
-  album?: string
+  album: string
+  duration: {
+    current: number
+    total: number
+  }
+
   isPlaying?: boolean
   image?: string
+  duration_ms?: number
+  serverTimestamp?: number
 }
-
 export interface Playlist {
   id: string
   name: string
@@ -98,6 +103,7 @@ export interface SpotifyPlaylistsItems {
 }
 
 export interface LyricsLine {
+  timestamp: number
   startTimeMs: string
   endTimeMs: string
   words: string

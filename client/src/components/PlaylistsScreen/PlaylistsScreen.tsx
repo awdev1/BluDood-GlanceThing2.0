@@ -738,7 +738,7 @@ const PlaylistsScreen: React.FC<PlaylistsScreenProps> = ({
                         </p>
                       </div>
                       <div className={styles.trackDuration}>
-                        {formatDuration(track.duration_ms)}
+                        {track.duration_ms !== undefined && formatDuration(track.duration_ms)}
                       </div>
                     </div>
                   ))}

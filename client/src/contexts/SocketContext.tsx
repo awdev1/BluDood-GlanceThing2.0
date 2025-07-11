@@ -34,7 +34,7 @@ const SocketContextProvider = ({ children }: SocketContextProviderProps) => {
   const frameId = useRef<number | null>(null)
 
   const connect = useCallback(() => {
-    const socket = new WebSocket('ws://192.168.1.150:8000')
+    const socket = new WebSocket('ws://localhost:8000')
     ws.current = socket
 
     socket.onopen = async () => {

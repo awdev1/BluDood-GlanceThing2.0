@@ -157,7 +157,7 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
     )
       return
 
-  const currentTime = (playerData.track?.duration.current ?? 0) + 500 // 0.5s earlier
+  const currentTime = (playerData.track?.duration.current ?? 0) + 1025 
 
 
     let foundIndex = -1

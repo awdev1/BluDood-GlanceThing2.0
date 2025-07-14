@@ -45,7 +45,7 @@ async function subscribe(connection_id: string, token: string) {
 }
 
 async function generateTotp(): Promise<string> {
-  const secret = "GEYDEMZZGM2TMOJYGI3DQNBUGY4TCMRQGEZDCNBXGEZDEMZUHE2DQMRZGQYTANZXGMZTMNRYG4YA";
+  const secret = "GU2TMMBRGAZDSNJRGAZDMNZTHAYTCOJWGA3TSOJXGUYDMMBRGE4TQNZUGM3TANRYGY4DMNQ";
 
   const totp = TOTP.generate(secret);
 
@@ -55,6 +55,7 @@ async function generateTotp(): Promise<string> {
 
 export async function getWebToken(sp_dc: string) {
   const totp = await generateTotp()
+  const totpServer = await generateTotp()
 
   const res = await axios.get('https://open.spotify.com/api/token', {
     headers: {
@@ -66,7 +67,8 @@ export async function getWebToken(sp_dc: string) {
       reason: 'init',
       productType: 'web-player',
       totp,
-      totpVer: '8'
+      totpServer,
+      totpVer: '14'
     },
     validateStatus: () => true
   })

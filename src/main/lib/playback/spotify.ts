@@ -37,25 +37,37 @@ async function subscribe(connection_id: string, token: string) {
     'https://api.spotify.com/v1/me/notifications/player',
     null,
     {
-      params: { connection_id },
-      headers: { Authorization: `Bearer ${token}` },
+      params: {
+        connection_id
+      },
+      headers: {
+        Authorization: `Bearer ${token}`
+      },
       validateStatus: () => true
     }
   )
 }
 
-async function generateTotp(): Promise<string> {
-  const secret = "GU2TMMBRGAZDSNJRGAZDMNZTHAYTCOJWGA3TSOJXGUYDMMBRGE4TQNZUGM3TANRYGY4DMNQ";
+async function generateTotp(): Promise<{
+  otp: string
+  version: string
+} | null> {
+  const res = await axios.get(
+    'https://gist.github.com/BluDood/1c82e1086a21adfad5e121f255774d57/raw'
+  )
+  if (res.status !== 200) return null
 
-  const totp = TOTP.generate(secret);
+  const totp = TOTP.generate(res.data.secret)
 
-  return totp.otp;
+  return {
+    otp: totp.otp,
+    version: res.data.version
+  }
 }
-
 
 export async function getWebToken(sp_dc: string) {
   const totp = await generateTotp()
-  const totpServer = await generateTotp()
+  if (!totp) throw new Error('Failed to generate TOTP')
 
   const res = await axios.get('https://open.spotify.com/api/token', {
     headers: {
@@ -66,9 +78,9 @@ export async function getWebToken(sp_dc: string) {
     params: {
       reason: 'init',
       productType: 'web-player',
-      totp,
-      totpServer,
-      totpVer: '14'
+      totp: totp.otp,
+      totpServer: totp.otp,
+      totpVer: totp.version
     },
     validateStatus: () => true
   })
@@ -79,7 +91,6 @@ export async function getWebToken(sp_dc: string) {
 
   return res.data.accessToken
 }
-
 
 export async function refreshAccessToken(
   clientId: string,
@@ -108,6 +119,7 @@ export async function refreshAccessToken(
 
   return res.data.access_token
 }
+
 
 
 const defaultSupportedActions: Action[] = [

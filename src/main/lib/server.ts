@@ -3,7 +3,6 @@ import { WebSocketServer } from 'ws'
 import {
   findOpenPort,
   isDev,
-  isPortOpen,
   log,
   LogLevel,
   safeParse
@@ -21,19 +20,7 @@ let port: number | null = null
 export async function getServerPort() {
   if (port) return port
 
-  if (isDev()) {
-    if (await isPortOpen(1337)) {
-      port = 1337
-      return port
-    } else {
-      log(
-        'Port 1337 is already in use. Using a random available port instead.',
-        'WebSocketServer'
-      )
-    }
-  }
-
-  port = await findOpenPort()
+  port = isDev() ? 8000 : await findOpenPort()
 
   return port
 }
@@ -67,9 +54,9 @@ export async function startServer() {
       ws.on('message', async msg => {
         const d = safeParse(msg.toString())
         if (!d) return
-        const { type, action, data } = d
+        const { type, action, data, callbackId } = d
         log(
-          `Received ${type} ${action ?? ''}`,
+          `Received ${type} ${action ?? ''} ${callbackId ? '(with callback)' : ''}`,
           'WebSocketServer',
           LogLevel.DEBUG
         )

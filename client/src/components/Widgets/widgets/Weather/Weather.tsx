@@ -1,7 +1,6 @@
 import { useContext } from 'react'
 import { AppStateContext } from '@/contexts/AppStateContext.tsx'
 import BaseWidget from '../BaseWidget/BaseWidget.tsx'
-
 import styles from './Weather.module.css'
 
 interface WeatherProps {
@@ -22,23 +21,34 @@ const Weather: React.FC<WeatherProps> = ({ visible }) => {
     showHumidity
   } = useContext(AppStateContext)
 
+  // 🌙 Determine if it's nighttime (after 6 PM or before 6 AM)
+  const currentHour = new Date().getHours()
+  const isNightTime = currentHour >= 18 || currentHour < 6
+
+  // 🌤️ Override emoji at night
+  const displayEmoji = isNightTime ? '🌙' : weatherEmoji
+
   return (
     <BaseWidget className={styles.weather} visible={visible}>
       {weather ? (
         <div className={styles.container}>
           <div className={styles.location}>{weather.location}</div>
+
           <div className={styles.row}>
             <div className={styles.temp}>
               {weather.temperature}
               {showTempUnit ? weather.temperatureUnit : '°'}
             </div>
+
             {showWeatherIcon && (
-              <div className={styles.icon}>{weatherEmoji}</div>
+              <div className={styles.icon}>{displayEmoji}</div>
             )}
           </div>
+
           {showWeatherDescription && (
             <div className={styles.description}>{weatherDescription}</div>
           )}
+
           {(showHumidity || showHighLowTemp) && (
             <div className={styles.condition}>
               {showHumidity && <span>💧{weather.humidity}%</span>}

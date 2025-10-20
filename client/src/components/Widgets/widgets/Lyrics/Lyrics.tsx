@@ -3,7 +3,8 @@ import React, {
   useContext,
   useEffect,
   useState,
-  useRef
+  useRef,
+  KeyboardEvent
 } from 'react'
 import { MediaContext } from '@/contexts/MediaContext.tsx'
 import BaseWidget from '../BaseWidget/BaseWidget'
@@ -15,156 +16,121 @@ interface LyricsProps {
   sectionActive: boolean
 }
 
+const DOUBLE_TAP_DELAY = 300
+
 const Lyrics: React.FC<LyricsProps> = ({ visible, sectionActive }) => {
-  const { lyricsData, lyricsLoading, lyricsCurrentLineIndex } =
-    useContext(MediaContext)
+  const {
+    lyricsData,
+    lyricsLoading,
+    lyricsCurrentLineIndex,
+    setLyricsScreenShown
+  } = useContext(MediaContext)
+
   const [error, setError] = useState<string | null>(null)
   const [hasLyrics, setHasLyrics] = useState<boolean>(false)
   const [syncLyric, setSyncLyric] = useState<boolean>(false)
 
   const lyricsContentRef = useRef<HTMLDivElement>(null)
   const activeLineRef = useRef<HTMLDivElement | null>(null)
-  const [originalPrimary, setOriginalPrimary] = useState<string | null>(
-    null
-  )
-  const [originalBgColor, setOriginalBgColor] = useState<string | null>(
-    null
-  )
-  const [originalInactiveColor, setOriginalInactiveColor] = useState<
-    string | null
-  >(null)
-  const [originalTextColor, setOriginalTextColor] = useState<
-    string | null
-  >(null)
+  const tapCount = useRef(0)
+  const tapTimer = useRef<NodeJS.Timeout | null>(null)
+
+  const [originalPrimary, setOriginalPrimary] = useState<string | null>(null)
+  const [originalBgColor, setOriginalBgColor] = useState<string | null>(null)
+  const [originalInactiveColor, setOriginalInactiveColor] = useState<string | null>(null)
+  const [originalTextColor, setOriginalTextColor] = useState<string | null>(null)
 
   useEffect(() => {
-    const computedStyle = getComputedStyle(document.documentElement)
-    setOriginalPrimary(computedStyle.getPropertyValue('--color-primary'))
-    setOriginalBgColor(
-      computedStyle.getPropertyValue('--lyrics-color-background')
-    )
-    setOriginalInactiveColor(
-      computedStyle.getPropertyValue('--lyrics-color-inactive')
-    )
-    setOriginalTextColor(
-      computedStyle.getPropertyValue('--lyrics-color-messaging')
-    )
+    const style = getComputedStyle(document.documentElement)
+    setOriginalPrimary(style.getPropertyValue('--color-primary'))
+    setOriginalBgColor(style.getPropertyValue('--lyrics-color-background'))
+    setOriginalInactiveColor(style.getPropertyValue('--lyrics-color-inactive'))
+    setOriginalTextColor(style.getPropertyValue('--lyrics-color-messaging'))
   }, [])
 
   const scrollToActiveLine = useCallback(() => {
-    if (!visible || !activeLineRef.current || !lyricsContentRef.current)
-      return
-    const lyricsContainer = lyricsContentRef.current
-    const activeLine = activeLineRef.current
-    const containerHeight = lyricsContainer.clientHeight
-    const lineTop = activeLine.offsetTop
-    const lineHeight = activeLine.clientHeight
-    const scrollTo = lineTop - containerHeight / 2 + lineHeight / 2
-    requestAnimationFrame(() => {
-      if (lyricsContainer) {
-        lyricsContainer.scrollTo({
-          top: scrollTo,
-          behavior: 'smooth'
-        })
-      }
-    })
+    if (!visible || !activeLineRef.current || !lyricsContentRef.current) return
+    const container = lyricsContentRef.current
+    const line = activeLineRef.current
+    const top = line.offsetTop - container.clientHeight / 2 + line.clientHeight / 2
+    container.scrollTo({ top, behavior: 'smooth' })
   }, [visible])
 
   useEffect(() => {
-    if (visible && sectionActive && syncLyric) {
-      requestAnimationFrame(() => {
-        if (lyricsCurrentLineIndex >= 0) {
-          scrollToActiveLine()
-        }
-        if (lyricsCurrentLineIndex === -1 && lyricsContentRef.current) {
-          lyricsContentRef.current.scrollTo({
-            top: 0,
-            behavior: 'smooth'
-          })
-        }
-      })
+    if (visible && sectionActive && syncLyric && lyricsCurrentLineIndex >= 0) {
+      requestAnimationFrame(scrollToActiveLine)
     }
-  }, [
-    lyricsCurrentLineIndex,
-    scrollToActiveLine,
-    visible,
-    sectionActive,
-    syncLyric
-  ])
+  }, [lyricsCurrentLineIndex, syncLyric, visible, sectionActive, scrollToActiveLine])
 
   const setColors = useCallback(
-    (bgColor?: string, textColor?: string, inactiveColor?: string) => {
-      document.documentElement.style.setProperty(
-        '--color-primary',
-        bgColor ?? originalPrimary
-      )
-      document.documentElement.style.setProperty(
-        '--lyrics-color-background',
-        bgColor ?? originalBgColor
-      )
-      document.documentElement.style.setProperty(
-        '--lyrics-color-active',
-        textColor ?? originalTextColor
-      )
-      document.documentElement.style.setProperty(
-        '--lyrics-color-inactive',
-        inactiveColor ?? originalInactiveColor
-      )
-      document.documentElement.style.setProperty(
-        '--lyrics-color-passed',
-        textColor ?? originalTextColor
-      )
-      document.documentElement.style.setProperty(
-        '--lyrics-color-messaging',
-        inactiveColor ?? originalTextColor
-      )
+    (bg?: string, txt?: string, inactive?: string) => {
+      document.documentElement.style.setProperty('--color-primary', bg ?? originalPrimary ?? '')
+      document.documentElement.style.setProperty('--lyrics-color-background', bg ?? originalBgColor ?? '')
+      document.documentElement.style.setProperty('--lyrics-color-active', txt ?? originalTextColor ?? '')
+      document.documentElement.style.setProperty('--lyrics-color-inactive', inactive ?? originalInactiveColor ?? '')
+      document.documentElement.style.setProperty('--lyrics-color-passed', txt ?? originalTextColor ?? '')
+      document.documentElement.style.setProperty('--lyrics-color-messaging', inactive ?? originalTextColor ?? '')
     },
-    [
-      originalPrimary,
-      originalBgColor,
-      originalInactiveColor,
-      originalTextColor
-    ]
+    [originalPrimary, originalBgColor, originalInactiveColor, originalTextColor]
   )
 
   useEffect(() => {
     setSyncLyric(false)
-    if (lyricsData) {
-      if (lyricsData?.lyrics?.syncType === 'LINE_SYNCED') {
-        setSyncLyric(true)
-      }
+    if (!lyricsData) {
+      setHasLyrics(false)
       setError(null)
-      setHasLyrics(
-        !!lyricsData?.lyrics?.lines && lyricsData.lyrics.lines.length > 0
-      )
+      setColors()
+      return
+    }
 
-      if (lyricsData.colors?.background !== undefined) {
-        try {
-          const background = lyricsData.colors.background
-          const r = background.r ?? 0
-          const g = background.g ?? 0
-          const b = background.b ?? 0
-          const bgColor = `rgb(${r}, ${g}, ${b})`
-          const brightness = (r * 299 + g * 587 + b * 114) / 1000
-          const textColor =
-            brightness > 128 ? 'rgb(0, 0, 0)' : 'rgb(255, 255, 255)'
+    const hasLines = !!lyricsData.lyrics?.lines?.length
+    setHasLyrics(hasLines)
+    setSyncLyric(lyricsData.lyrics?.syncType === 'LINE_SYNCED')
+    setError(lyricsData.message || null)
 
-          const inactiveColor =
-            brightness > 128
-              ? `rgb(255, 255, 255)`
-              : `rgb(${Math.min(255, background.r + 140)}, ${Math.min(255, background.g + 140)}, ${Math.min(255, background.b + 140)})`
-          setColors(bgColor, textColor, inactiveColor)
-        } catch (err) {
-          console.error('Error setting background color:', err)
-        }
-      }
-
-      if (lyricsData.message) {
-        setColors()
-        setError(lyricsData.message)
-      }
+    if (hasLines && lyricsData.colors?.background) {
+      const { r = 0, g = 0, b = 0 } = lyricsData.colors.background
+      const bg = `rgb(${r},${g},${b})`
+      const brightness = (r * 299 + g * 587 + b * 114) / 1000
+      const txt = brightness > 128 ? 'rgb(0,0,0)' : 'rgb(255,255,255)'
+      const inactive = brightness > 128
+        ? 'rgb(255,255,255)'
+        : `rgb(${Math.min(255, r + 140)},${Math.min(255, g + 140)},${Math.min(255, b + 140)})`
+      setColors(bg, txt, inactive)
+    } else {
+      setColors()
     }
   }, [lyricsData, setColors])
+
+  const handleInteraction = useCallback(() => {
+    tapCount.current += 1
+
+    if (tapCount.current === 1) {
+      tapTimer.current = setTimeout(() => {
+        tapCount.current = 0
+      }, DOUBLE_TAP_DELAY)
+    } else if (tapCount.current === 2) {
+      if (tapTimer.current) clearTimeout(tapTimer.current)
+      tapCount.current = 0
+      if (hasLyrics && setLyricsScreenShown) {
+        setLyricsScreenShown(true)
+      }
+    }
+  }, [hasLyrics, setLyricsScreenShown])
+
+  useEffect(() => {
+    return () => {
+      if (tapTimer.current) clearTimeout(tapTimer.current)
+    }
+  }, [])
+
+  const handleKeyDown = useCallback((e: KeyboardEvent<HTMLDivElement>) => {
+    if (!visible || !sectionActive) return
+    if (e.key.toLowerCase() === 'l' && hasLyrics) {
+      e.preventDefault()
+      setLyricsScreenShown(true)
+    }
+  }, [visible, sectionActive, hasLyrics, setLyricsScreenShown])
 
   const renderLyrics = () => {
     if (!visible || !hasLyrics || !lyricsData?.lyrics?.lines) {
@@ -172,15 +138,23 @@ const Lyrics: React.FC<LyricsProps> = ({ visible, sectionActive }) => {
     }
 
     return (
-      <div className={styles.lyricsContent} ref={lyricsContentRef}>
+      <div
+        className={styles.lyricsContent}
+        ref={lyricsContentRef}
+        onClick={handleInteraction}
+        onTouchEnd={handleInteraction}
+        style={{ cursor: hasLyrics ? 'pointer' : 'default' }}
+      >
         <div
           className={styles.lyricsTopPadding}
           style={{ display: syncLyric ? 'block' : 'none' }}
-        ></div>
+        />
         {lyricsData.lyrics.lines.map((line, index) => (
           <div
             key={index}
-            className={`${styles.line} ${index === lyricsCurrentLineIndex ? styles.activeLine : ''} ${index < lyricsCurrentLineIndex ? styles.passedLine : ''}`}
+            className={`${styles.line} ${
+              index === lyricsCurrentLineIndex ? styles.activeLine : ''
+            } ${index < lyricsCurrentLineIndex ? styles.passedLine : ''}`}
             ref={index === lyricsCurrentLineIndex ? activeLineRef : null}
           >
             <div className={styles.lineContent}>{line.words}</div>
@@ -189,15 +163,13 @@ const Lyrics: React.FC<LyricsProps> = ({ visible, sectionActive }) => {
         <div
           className={styles.lyricsBottomPadding}
           style={{ display: syncLyric ? 'block' : 'none' }}
-        ></div>
+        />
       </div>
     )
   }
 
   const renderContent = () => {
-    if (!visible) {
-      return null
-    }
+    if (!visible) return null
 
     if (error) {
       return (
@@ -212,7 +184,11 @@ const Lyrics: React.FC<LyricsProps> = ({ visible, sectionActive }) => {
     }
 
     if (hasLyrics) {
-      return <div className={styles.lyricsContainer}>{renderLyrics()}</div>
+      return (
+        <div className={styles.lyricsContainer}>
+          {renderLyrics()}
+        </div>
+      )
     }
 
     return <div className={styles.loading}>Waiting for track...</div>
@@ -220,9 +196,18 @@ const Lyrics: React.FC<LyricsProps> = ({ visible, sectionActive }) => {
 
   return (
     <BaseWidget className={styles.lyricsWidget} visible={visible}>
-      <div className={styles.lyricsWidgetContainer}>{renderContent()}</div>
+      <div
+        className={styles.lyricsWidgetContainer}
+        tabIndex={0}
+        autoFocus
+        onKeyDown={handleKeyDown}
+      >
+        {renderContent()}
+      </div>
     </BaseWidget>
   )
 }
 
+export { Lyrics }
+export type { LyricsProps }
 export default Lyrics

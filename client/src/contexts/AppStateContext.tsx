@@ -92,7 +92,7 @@ const defaultSettings: AppSettings = {
 
 const AppStateContext = createContext<AppStateContextProps>({
   ...defaultSettings,
-  setSettings: () => {},
+  setSettings: () => { },
   time: '',
   date: '',
   weather: null,
@@ -101,9 +101,9 @@ const AppStateContext = createContext<AppStateContextProps>({
   weatherEmoji: '',
   weatherDescription: '',
   playerShown: false,
-  setPlayerShown: () => {},
+  setPlayerShown: () => { },
   playlistsShown: false,
-  setPlaylistsShown: () => {},
+  setPlaylistsShown: () => { },
   getCurrentServerTime: () => new Date()
 })
 
@@ -135,6 +135,7 @@ const AppStateContextProvider = ({
 
   const [playerShown, setPlayerShown] = useState<boolean>(false)
   const [playlistsShown, setPlaylistsShown] = useState<boolean>(false)
+  const [lyricsScreenShown, setLyricsScreenShown] = useState<boolean>(false)
 
   const setSettings = (newSettings: Partial<AppSettings>) => {
     setSettingsState(prev => ({
@@ -286,7 +287,9 @@ const AppStateContextProvider = ({
     setPlayerShown,
     playlistsShown,
     setPlaylistsShown,
-    getCurrentServerTime
+    getCurrentServerTime,
+    lyricsScreenShown,
+    setLyricsScreenShown,
   }
 
   return (

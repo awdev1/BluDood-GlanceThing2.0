@@ -3,14 +3,16 @@ import { useContext, useEffect } from 'react'
 import { AppBlurContext } from '@/contexts/AppBlurContext.tsx'
 import { SocketContext } from '@/contexts/SocketContext.tsx'
 import { AppStateContext } from '@/contexts/AppStateContext.tsx'
+import { MediaContext } from '@/contexts/MediaContext.tsx'
 
-import FullescreenPlayer from './components/FullscreenPlayer/FullscreenPlayer.tsx'
+import FullscreenPlayer from './components/FullscreenPlayer/FullscreenPlayer.tsx'
 import LoadingScreen from '@/components/LoadingScreen/LoadingScreen.tsx'
 import UpdateScreen from './components/UpdateScreen/UpdateScreen.tsx'
 import Statusbar from '@/components/Statusbar/Statusbar.tsx'
 import Widgets from '@/components/Widgets/Widgets.tsx'
 import Menu from '@/components/Menu/Menu.tsx'
 import PlaylistsScreen from './components/PlaylistsScreen/PlaylistsScreen.tsx'
+import LyricsScreen from '@/components/LyricsScreen/LyricsScreen.tsx'
 
 import styles from './App.module.css'
 
@@ -25,33 +27,53 @@ const App: React.FC = () => {
     setPlaylistsShown
   } = useContext(AppStateContext)
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !playlistsShown) {
-        setPlayerShown(!playerShown)
-      } else if (e.key === 'Escape' && playlistsShown) {
-        setPlaylistsShown(!playlistsShown)
-      }
+  const { lyricsScreenShown, setLyricsScreenShown } = useContext(MediaContext)
+
+useEffect(() => {
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key !== 'Escape') return
+
+    if (lyricsScreenShown) {
+      setLyricsScreenShown(false)
+      return 
     }
 
-    document.addEventListener('keydown', handleKeyDown)
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown)
+    if (playlistsShown) {
+      setPlaylistsShown(false)
+      return
     }
-  }, [playerShown, setPlayerShown, playlistsShown, setPlaylistsShown])
+
+    if (playerShown) {
+      setPlayerShown(false)
+      return
+    }
+
+    setPlayerShown(true)
+  }
+
+  document.addEventListener('keydown', handleKeyDown)
+  return () => document.removeEventListener('keydown', handleKeyDown)
+}, [
+  lyricsScreenShown,
+  playlistsShown,
+  playerShown,
+  setLyricsScreenShown,
+  setPlaylistsShown,
+  setPlayerShown
+])
+
 
   return (
     <>
       <div className={styles.app} data-blurred={blurred || !ready}>
         {showStatusBar && <Statusbar />}
         <Widgets />
-        <FullescreenPlayer shown={playerShown} setShown={setPlayerShown} />
-        <PlaylistsScreen
-          shown={playlistsShown}
-          setShown={setPlaylistsShown}
-        />
+
+        <LyricsScreen shown={lyricsScreenShown} setShown={setLyricsScreenShown} />
+        <FullscreenPlayer shown={playerShown} setShown={setPlayerShown} />
+        <PlaylistsScreen shown={playlistsShown} setShown={setPlaylistsShown} />
       </div>
+
       <LoadingScreen />
       <UpdateScreen />
       <Menu />

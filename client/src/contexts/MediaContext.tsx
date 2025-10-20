@@ -47,6 +47,9 @@ interface MediaContextProps {
   setLikedSongsOffset?: React.Dispatch<React.SetStateAction<number>>
   setLikedSongsLoading?: React.Dispatch<React.SetStateAction<boolean>>
 
+  lyricsScreenShown: boolean
+  setLyricsScreenShown: React.Dispatch<React.SetStateAction<boolean>>
+
   actions: {
     playPause: () => void
     skipForward: () => void
@@ -83,34 +86,36 @@ const MediaContext = createContext<MediaContextProps>({
   playlistsOffset: 0,
   playlistsTotal: 0,
   playlistsLoading: false,
-  setPlaylistsData: () => {},
-  setPlaylistsOffset: () => {},
-  setPlaylistsLoading: () => {},
+  setPlaylistsData: () => { },
+  setPlaylistsOffset: () => { },
+  setPlaylistsLoading: () => { },
   likedSongsData: null,
   likedSongsImage: '',
   likedSongsOffset: 0,
   likedSongsTotal: 0,
   likedSongsLoading: false,
-  setLikedSongsData: () => {},
-  setLikedSongsOffset: () => {},
-  setLikedSongsLoading: () => {},
+  setLikedSongsData: () => { },
+  setLikedSongsOffset: () => { },
+  setLikedSongsLoading: () => { },
+  lyricsScreenShown: false,
+  setLyricsScreenShown: () => { },
   actions: {
-    playPause: () => {},
-    skipForward: () => {},
-    skipBackward: () => {},
-    setVolume: () => {},
-    shuffle: () => {},
-    repeat: () => {},
-    playlists: () => {},
-    playPlaylist: () => {},
-    albums: () => {},
-    playAlbum: () => {},
-    likedSongs: () => {},
-    playlistTracks: () => {},
-    albumTracks: () => {},
-    playTrack: () => {},
-    devices: () => {},
-    transferPlayback: () => {}
+    playPause: () => { },
+    skipForward: () => { },
+    skipBackward: () => { },
+    setVolume: () => { },
+    shuffle: () => { },
+    repeat: () => { },
+    playlists: () => { },
+    playPlaylist: () => { },
+    albums: () => { },
+    playAlbum: () => { },
+    likedSongs: () => { },
+    playlistTracks: () => { },
+    albumTracks: () => { },
+    playTrack: () => { },
+    devices: () => { },
+    transferPlayback: () => { }
   }
 })
 
@@ -126,28 +131,23 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
   const [playerData, setPlayerData] = useState<PlaybackData | null>(null)
   const playerDataRef = useRef<PlaybackData | null>(null)
   const [image, setImage] = useState<string | null>(null)
-  const [lyricsData, setLyricsData] = useState<SpotifyLyricsData | null>(
-    null
-  )
+  const [lyricsData, setLyricsData] = useState<SpotifyLyricsData | null>(null)
   const [lyricsLoading, setLyricsLoading] = useState<boolean>(false)
-  const [lyricsCurrentLineIndex, setlyricsCurrentLineIndex] =
-    useState<number>(-1)
+  const [lyricsCurrentLineIndex, setlyricsCurrentLineIndex] = useState<number>(-1)
 
-  const [playlistsData, setPlaylistsData] = useState<
-    SpotifyPlaylistsItems[] | null
-  >(null)
+  const [playlistsData, setPlaylistsData] = useState<SpotifyPlaylistsItems[] | null>(null)
   const [albumsData, setAlbumsData] = useState<Album[] | null>(null)
   const [playlistsOffset, setPlaylistsOffset] = useState(0)
   const [playlistsTotal, setPlaylistsTotal] = useState(0)
   const [playlistsLoading, setPlaylistsLoading] = useState(false)
 
-  const [likedSongsData, setLikedSongsData] = useState<Track[] | null>(
-    null
-  )
+  const [likedSongsData, setLikedSongsData] = useState<Track[] | null>(null)
   const [likedSongsOffset, setLikedSongsOffset] = useState(0)
   const [likedSongsTotal, setLikedSongsTotal] = useState(0)
   const [likedSongsLoading, setLikedSongsLoading] = useState(false)
   const [likedSongsImage, setLikedSongsImage] = useState<string>('')
+
+  const [lyricsScreenShown, setLyricsScreenShown] = useState<boolean>(false)
 
   useEffect(() => {
     if (
@@ -157,8 +157,7 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
     )
       return
 
-  const currentTime = (playerData.track?.duration.current ?? 0) + 1025 
-
+    const currentTime = (playerData.track?.duration.current ?? 0) + 1025
 
     let foundIndex = -1
     const lines = lyricsData.lyrics.lines
@@ -231,7 +230,8 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
         if (action === 'lyrics') {
           setLyricsLoading(false)
           setLyricsData(data)
-          return
+
+
         }
 
         if (action === 'playlists') {
@@ -338,7 +338,7 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
               prevData.shuffle !== data.shuffle ||
               prevData.repeat !== data.repeat ||
               prevData.track.duration.current !==
-                data.track.duration.current ||
+              data.track.duration.current ||
               prevData.track.duration.total !== data.track.duration.total
 
             return hasChanged ? data : prevData
@@ -400,8 +400,7 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
     let intervalId: number
 
     const updateProgress = () => {
-      // Check if this update is still valid
-      if (updateRef.current !== updateInfo)  return
+      if (updateRef.current !== updateInfo) return
 
       const currentServerTime = getCurrentServerTime()
       const elapsedMs = currentServerTime.getTime() - updateInfo.serverTimeAtStart.getTime()
@@ -616,7 +615,9 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
         likedSongsLoading,
         setLikedSongsData,
         setLikedSongsOffset,
-        setLikedSongsLoading
+        setLikedSongsLoading,
+        lyricsScreenShown,
+        setLyricsScreenShown
       }}
     >
       {children}

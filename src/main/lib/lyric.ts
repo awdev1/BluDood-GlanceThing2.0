@@ -3,17 +3,14 @@ import { log, LogLevel } from './utils.js'
 import { LyricsResponse, PlaybackData } from '../types/Playback.js'
 import { Cache } from './cache.js'
 
-// Centralized lyrics cache with 24 hours expiration
 export const lyricsCache = new Cache<LyricsResponse>(
   24 * 60 * 60 * 1000,
   'global_lyrics_cache',
   'lyrics'
 )
 
-// Cache cleanup interval
 let cacheCleanupInterval: NodeJS.Timeout | null = null
 
-// Initialize the cache
 export function initializeLyricsCache(): void {
   lyricsCache.load()
   if (!cacheCleanupInterval) {
@@ -22,12 +19,11 @@ export function initializeLyricsCache(): void {
         lyricsCache.clean()
         lyricsCache.save()
       },
-      60 * 60 * 1000 // Clean every hour
+      60 * 60 * 1000
     )
   }
 }
 
-// Cleanup the cache
 export function cleanupLyricsCache(): void {
   lyricsCache.save()
   lyricsCache.clear()
@@ -37,15 +33,21 @@ export function cleanupLyricsCache(): void {
   }
 }
 
-// Parse LRC format into LyricsResponse lines
 function parseLrcLyrics(lrc: string): {
-  lines: { startTimeMs: string; endTimeMs: string; words: string }[]
+  lines: {
+    startTimeMs: string
+    endTimeMs: string
+    words: string
+    syllables?: { startTimeMs: string; endTimeMs: string; text: string }[]
+  }[]
 } {
   const lines: {
     startTimeMs: string
     endTimeMs: string
     words: string
+    syllables?: { startTimeMs: string; endTimeMs: string; text: string }[]
   }[] = []
+
   const lrcLines = lrc.split('\n').filter(line => line.trim())
 
   for (const line of lrcLines) {
@@ -56,10 +58,12 @@ function parseLrcLyrics(lrc: string): {
     const startTimeMs =
       (parseInt(minutes) * 60 + parseInt(seconds)) * 1000 +
       parseInt(milliseconds.padEnd(3, '0'))
+
     lines.push({
       startTimeMs: startTimeMs.toString(),
       endTimeMs: '0',
-      words: text.trim()
+      words: text.trim(),
+      syllables: undefined // satisfy type
     })
   }
 
@@ -77,12 +81,10 @@ export async function getLyrics(
 ): Promise<LyricsResponse | null> {
   if (!current) return null
 
-  // Extract track info from PlaybackData
   const { id: trackId, name: title, artists, album } = current.track
   const artist = artists[0] || ''
   const now = Date.now()
 
-  // Use trackId or fallback cache key for consistency
   const cacheKey = trackId || `${artist}-${title}-${album}`
   try {
     const cachedLyrics = lyricsCache.get(cacheKey)
@@ -117,7 +119,8 @@ export async function getLyrics(
       const lyricsResponse: LyricsResponse = {
         lyrics: {
           syncType: 'LINE_SYNCED',
-          lines
+          // @ts-ignore
+          lines,
         },
         source: 'lrclib'
       }

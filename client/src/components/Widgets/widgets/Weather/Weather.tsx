@@ -21,11 +21,9 @@ const Weather: React.FC<WeatherProps> = ({ visible }) => {
     showHumidity
   } = useContext(AppStateContext)
 
-  // 🌙 Determine if it's nighttime (after 6 PM or before 6 AM)
   const currentHour = new Date().getHours()
   const isNightTime = currentHour >= 18 || currentHour < 6
 
-  // 🌤️ Override emoji at night
   const displayEmoji = isNightTime ? '🌙' : weatherEmoji
 
   return (

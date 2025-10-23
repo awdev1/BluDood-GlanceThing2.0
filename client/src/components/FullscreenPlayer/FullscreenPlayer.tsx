@@ -4,7 +4,8 @@ import React, {
   useEffect,
   useRef,
   useState,
-  WheelEvent
+  WheelEvent,
+  TouchEvent
 } from 'react'
 
 import { MediaContext } from '@/contexts/MediaContext.tsx'
@@ -32,6 +33,7 @@ const FullescreenPlayer: React.FC<FullescreenPlayerProps> = ({
     else playerRef.current?.blur()
   }, [shown])
 
+
   function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
     e.stopPropagation()
     e.preventDefault()
@@ -47,12 +49,10 @@ const FullescreenPlayer: React.FC<FullescreenPlayerProps> = ({
     }
   }
 
+
   function onWheel(e: WheelEvent<HTMLDivElement>) {
-    if (e.deltaX < 0) {
-      volumeDown()
-    } else if (e.deltaX > 0) {
-      volumeUp()
-    }
+    if (e.deltaX < 0) volumeDown()
+    else if (e.deltaX > 0) volumeUp()
   }
 
   const [volume, setVolume] = useState(0)
@@ -65,10 +65,8 @@ const FullescreenPlayer: React.FC<FullescreenPlayerProps> = ({
     if (!playerDataRef.current.supportedActions.includes('volume')) return
 
     const volume = volumeRef.current
-
     if (volume < 100) {
       const newVolume = Math.min(volume + 10, 100)
-
       actions.setVolume(newVolume)
       setVolume(newVolume)
       volumeRef.current = newVolume
@@ -81,11 +79,9 @@ const FullescreenPlayer: React.FC<FullescreenPlayerProps> = ({
     if (!playerDataRef.current.supportedActions.includes('volume')) return
 
     const volume = volumeRef.current
-
     if (volume > 0) {
       const newVolume = Math.max(volume - 10, 0)
       actions.setVolume(newVolume)
-
       setVolume(newVolume)
       volumeRef.current = newVolume
       lastVolumeChange.current = Date.now()
@@ -94,13 +90,8 @@ const FullescreenPlayer: React.FC<FullescreenPlayerProps> = ({
 
   useEffect(() => {
     setVolumeAdjusted(true)
-    const timer = setTimeout(() => {
-      setVolumeAdjusted(false)
-    }, 2000)
-
-    return () => {
-      clearTimeout(timer)
-    }
+    const timer = setTimeout(() => setVolumeAdjusted(false), 2000)
+    return () => clearTimeout(timer)
   }, [volume])
 
   useEffect(() => {
@@ -112,6 +103,47 @@ const FullescreenPlayer: React.FC<FullescreenPlayerProps> = ({
     }
   }, [playerData])
 
+  const touchStartX = useRef<number | null>(null)
+  const touchEndX = useRef<number | null>(null)
+  const SWIPE_THRESHOLD = 60 // px threshold
+
+  const [swipeFeedback, setSwipeFeedback] = useState<'forward' | 'back' | null>(
+    null
+  )
+
+  function triggerSwipeFeedback(direction: 'forward' | 'back') {
+    setSwipeFeedback(direction)
+    setTimeout(() => setSwipeFeedback(null), 500)
+  }
+
+  function onTouchStart(e: TouchEvent<HTMLDivElement>) {
+    touchStartX.current = e.touches[0].clientX
+  }
+
+  function onTouchMove(e: TouchEvent<HTMLDivElement>) {
+    touchEndX.current = e.touches[0].clientX
+  }
+
+  function onTouchEnd() {
+    if (touchStartX.current === null || touchEndX.current === null) return
+
+    const deltaX = touchEndX.current - touchStartX.current
+
+    if (Math.abs(deltaX) > SWIPE_THRESHOLD) {
+      if (deltaX < 0) {
+        actions.skipForward()
+        triggerSwipeFeedback('forward')
+      } else {
+        actions.skipBackward()
+        triggerSwipeFeedback('back')
+      }
+    }
+
+    touchStartX.current = null
+    touchEndX.current = null
+  }
+
+
   return (
     <div
       className={styles.player}
@@ -119,6 +151,9 @@ const FullescreenPlayer: React.FC<FullescreenPlayerProps> = ({
       ref={playerRef}
       onKeyDown={onKeyDown}
       onWheel={onWheel}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
       tabIndex={-1}
     >
       <button
@@ -130,11 +165,24 @@ const FullescreenPlayer: React.FC<FullescreenPlayerProps> = ({
       >
         <span className="material-icons">keyboard_arrow_down</span>
       </button>
+
+
+      {swipeFeedback && (
+        <div
+          className={`${styles.swipeFeedback} ${
+            swipeFeedback === 'forward' ? styles.forward : styles.back
+          }`}
+        >
+          <span className="material-icons">
+            {swipeFeedback === 'forward' ? 'skip_next' : 'skip_previous'}
+          </span>
+        </div>
+      )}
+
       {playerData && playerData.track ? (
         <>
-          {image && (
-            <img src={image} alt="" className={styles.background} />
-          )}
+          {image && <img src={image} alt="" className={styles.background} />}
+
           <div className={styles.track}>
             <div className={styles.cover}>
               {image ? (
@@ -150,22 +198,25 @@ const FullescreenPlayer: React.FC<FullescreenPlayerProps> = ({
               </div>
             </div>
           </div>
+
           <div className={styles.progress}>
             <div
               className={styles.bar}
               style={{
-                width: `${(playerData.track.duration.current / playerData.track.duration.total) * 100}%`
+                width: `${
+                  (playerData.track.duration.current /
+                    playerData.track.duration.total) *
+                  100
+                }%`
               }}
             ></div>
           </div>
-          <div
-            className={styles.controls}
-            data-hide-buttons={volumeAdjusted}
-          >
+
+          <div className={styles.controls} data-hide-buttons={volumeAdjusted}>
             {playerData.supportedActions.includes('volume') && (
               <div className={styles.volume} data-shown={volumeAdjusted}>
                 <button onMouseDown={volumeDown}>
-                  <span className="material-icons"> volume_down </span>
+                  <span className="material-icons">volume_down</span>
                 </button>
                 <div className={styles.slider}>
                   <div
@@ -174,53 +225,58 @@ const FullescreenPlayer: React.FC<FullescreenPlayerProps> = ({
                   ></div>
                 </div>
                 <button onMouseDown={volumeUp}>
-                  <span className="material-icons"> volume_up </span>
+                  <span className="material-icons">volume_up</span>
                 </button>
               </div>
             )}
-            {playerData.supportedActions.includes('shuffle') ? (
+
+            {playerData.supportedActions.includes('shuffle') && (
               <button
-                data-shuffle-state={playerData?.shuffle}
+                data-shuffle-state={playerData.shuffle}
                 onClick={() =>
-                  actions.shuffle(playerData?.shuffle ? false : true)
+                  actions.shuffle(playerData.shuffle ? false : true)
                 }
               >
                 <span className="material-icons">shuffle</span>
               </button>
-            ) : null}
+            )}
+
             <button onClick={() => actions.skipBackward()}>
               <span className="material-icons">skip_previous</span>
             </button>
+
             <button onClick={() => actions.playPause()}>
               <span className="material-icons">
-                {playerData?.isPlaying ? 'pause' : 'play_arrow'}
+                {playerData.isPlaying ? 'pause' : 'play_arrow'}
               </span>
             </button>
+
             <button onClick={() => actions.skipForward()}>
               <span className="material-icons">skip_next</span>
             </button>
-            {playerData.supportedActions.includes('repeat') ? (
+
+            {playerData.supportedActions.includes('repeat') && (
               <button
-                data-repeat-state={playerData?.repeat !== 'off'}
+                data-repeat-state={playerData.repeat !== 'off'}
                 onClick={() =>
                   actions.repeat(
-                    playerData?.repeat === 'off'
+                    playerData.repeat === 'off'
                       ? 'on'
-                      : playerData?.repeat === 'on'
-                        ? 'one'
-                        : 'off'
+                      : playerData.repeat === 'on'
+                      ? 'one'
+                      : 'off'
                   )
                 }
               >
                 <span className="material-icons">
-                  {playerData?.repeat === 'off'
+                  {playerData.repeat === 'off'
                     ? 'repeat'
-                    : playerData?.repeat === 'on'
-                      ? 'repeat'
-                      : 'repeat_one'}
+                    : playerData.repeat === 'on'
+                    ? 'repeat'
+                    : 'repeat_one'}
                 </span>
               </button>
-            ) : null}
+            )}
           </div>
         </>
       ) : (

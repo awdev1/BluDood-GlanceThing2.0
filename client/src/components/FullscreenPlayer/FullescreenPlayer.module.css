@@ -177,8 +177,6 @@
   background: #ddd;
   border-radius: 10px;
   overflow: hidden;
-
-  /* visually centered */
   margin-right: 5px;
 }
 
@@ -221,4 +219,75 @@
   font-size: 24px;
   color: #aaa;
   max-width: 80%;
+}
+
+.swipeFeedback {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+  z-index: 10;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.swipeFeedback span {
+  font-size: 120px;
+  color: white;
+  opacity: 0.9;
+  text-shadow: 0 0 30px rgba(255, 255, 255, 0.6);
+}
+
+.swipeFeedback.forward {
+  background: linear-gradient(
+    to left,
+    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0)
+  );
+  animation: swipeForward 0.5s ease;
+}
+
+.swipeFeedback.back {
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0)
+  );
+  animation: swipeBack 0.5s ease;
+}
+
+@keyframes swipeForward {
+  0% {
+    opacity: 0;
+    transform: translateX(50px) scale(0.9);
+  }
+  30% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50px) scale(0.9);
+  }
+}
+
+@keyframes swipeBack {
+  0% {
+    opacity: 0;
+    transform: translateX(-50px) scale(0.9);
+  }
+  30% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(50px) scale(0.9);
+  }
 }

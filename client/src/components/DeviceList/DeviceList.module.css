@@ -1,134 +1,142 @@
-.activeDevice {
-  color: #1db954;
-  display: inline-block;
-  margin-left: 6px;
-  font-size: 0.9rem;
-  vertical-align: middle;
-}
-
 .deviceListContainer {
   width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  background: rgba(10, 10, 10, 0.85);
+  backdrop-filter: blur(18px);
+  border-radius: 24px;
+  box-shadow: 0 0 25px rgba(0, 0, 0, 0.7);
+  color: #fff;
   position: relative;
 }
 
 .deviceListContent {
-  overflow-y: auto;
   flex: 1;
-  scrollbar-color: #444 #282828;
-  padding: 0 15px;
-  height: 100%;
+  overflow-y: auto;
+  padding: 0 18px;
+  scrollbar-width: thin;
+  scrollbar-color: #1db954 transparent;
+  animation: fadeIn 0.3s ease forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .listHeader {
   display: flex;
-  justify-content: space-around;
-  gap: 4px;
-  padding: 10px 0;
+  justify-content: space-between;
+  padding: 14px 20px;
   position: sticky;
   top: 0;
-  background: #111;
-  z-index: 2;
+  z-index: 5;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .headerButton {
   border: none;
+  background: rgba(255, 255, 255, 0.06);
+  color: #b3b3b3;
   border-radius: 50%;
-  padding: 15px;
-  margin-bottom: 0;
+  padding: 12px;
   cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
+  justify-content: center;
 }
 
 .headerButton:hover {
-  background-color: #444;
-  color: white;
+  color: #fff;
+  background: rgba(29, 185, 84, 0.25);
+  transform: scale(1.1);
+}
+
+.headerButton:active {
+  transform: scale(0.95);
 }
 
 .headerButton span {
-  font-size: 20px;
+  font-size: 22px;
 }
 
 .deviceList {
-  list-style: none;
-  margin: 0;
-  padding: 10px 20px 20px 10px;
-  scrollbar-width: thin;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
+  padding: 12px 10px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .deviceItem {
-  background-color: #282828;
-  border-radius: 20px;
-  padding: 12px;
-  margin-bottom: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 14px;
   display: flex;
-  flex-direction: row;
-  transition: background-color 0.2s;
   justify-content: space-between;
+  align-items: center;
+  transition: all 0.25s ease;
+  position: relative;
+  backdrop-filter: blur(8px);
 }
 
 .deviceItem:hover {
-  background-color: #333;
+  background: rgba(29, 185, 84, 0.15);
+  transform: translateY(-2px);
 }
 
 .deviceItem.active {
-  padding-left: 12px;
-  background-color: rgba(29, 185, 84, 0.5);
+  background: rgba(29, 185, 84, 0.35);
+  border-color: #1db954;
+  box-shadow: 0 0 12px rgba(29, 185, 84, 0.4);
 }
 
 .deviceInfo {
   display: flex;
-  align-items: center;
   flex-direction: column;
-}
-
-.deviceInfoItem {
-  display: flex;
-  align-items: flex-start;
-  flex-flow: column;
-}
-
-.deviceIcon {
-  font-size: 22px;
-  margin-right: 10px;
-  color: #1db954;
+  gap: 6px;
 }
 
 .deviceDetails {
-  flex-grow: 1;
   display: flex;
-  margin-bottom: 8px;
+  align-items: center;
+  gap: 10px;
+}
+
+.deviceIcon {
+  color: #1db954;
+  font-size: 26px;
 }
 
 .deviceName {
-  display: block;
   font-weight: 600;
   font-size: 1rem;
-  margin-bottom: 2px;
+  color: #fff;
 }
 
-.deviceType {
-  display: block;
-  color: #b3b3b3;
-  font-size: 0.8rem;
-  text-transform: capitalize;
+.activeDevice {
+  color: #1db954;
+  margin-left: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
 }
 
 .deviceControls {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  width: 100%;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
   margin-top: 8px;
 }
 
@@ -137,68 +145,35 @@
   align-items: center;
   gap: 8px;
   color: #b3b3b3;
-  margin-right: 10px;
-  padding: 4px 0;
 }
 
 .volumeButton {
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
-  width: 44px;
-  height: 44px;
+  border: none;
+  background: rgba(255, 255, 255, 0.08);
+  color: #b3b3b3;
+  cursor: pointer;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  color: #b3b3b3;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-  user-select: none;
   position: relative;
-  overflow: hidden;
 }
 
-.volumeButton::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.3);
-  transform: translate(-50%, -50%);
-  transition:
-    width 0.3s,
-    height 0.3s;
-}
-
-.volumeButton:active::after {
-  width: 100%;
-  height: 100%;
-}
-
-.volumeButton:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.15);
-  color: white;
-  transform: scale(1.05);
-}
-
-.volumeButton:active:not(:disabled) {
-  background: rgba(29, 185, 84, 0.2);
+.volumeButton:hover {
   color: #1db954;
-  transform: scale(0.95);
+  background: rgba(29, 185, 84, 0.2);
 }
 
 .volumeButton:disabled {
-  opacity: 0.3;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
-.volumeButton .material-icons {
-  font-size: 24px;
+.volumeButton:active {
+  transform: scale(0.9);
 }
 
 .volumeInfo {
@@ -206,109 +181,92 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  min-width: 60px;
-  user-select: none;
-  -webkit-user-select: none;
 }
 
 .volumeIcon {
   font-size: 28px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  padding: 4px;
-  border-radius: 50%;
-}
-
-.volumeIcon:hover {
   color: #1db954;
-  background: rgba(29, 185, 84, 0.1);
+  transition: color 0.2s ease;
 }
 
 .volumeDisplay {
-  color: #b3b3b3;
-  font-size: 14px;
+  font-size: 0.85rem;
   font-weight: 500;
-  text-align: center;
-  transition: all 0.2s ease;
+  color: #ddd;
 }
 
 .buttonGroup {
   display: flex;
-  gap: 8px;
   align-items: center;
-  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .transferButton {
-  background-color: #1db954;
+  background: linear-gradient(135deg, #1db954, #1ed760);
   color: white;
   border: none;
   border-radius: 50%;
-  padding: 15px;
+  padding: 14px;
   cursor: pointer;
-  transition: background-color 0.2s;
-  text-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
+  transition: all 0.25s ease;
+  box-shadow: 0 0 8px rgba(29, 185, 84, 0.4);
 }
 
-.transferButton span {
-  font-size: 20px;
-}
-
-.transferButton:hover:not(:disabled) {
-  background-color: #1ed760;
+.transferButton:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 15px rgba(29, 185, 84, 0.6);
 }
 
 .transferButton:disabled {
-  background-color: #535353;
+  background: #333;
+  color: #777;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .transferButton.error {
-  background-color: #ff5252;
-  cursor: not-allowed;
+  background: linear-gradient(135deg, #ff5252, #ff7676);
+  box-shadow: 0 0 12px rgba(255, 82, 82, 0.4);
 }
 
 .transferError {
   color: #ff5252;
   font-size: 0.75rem;
-  margin-top: 6px;
+  margin-top: 4px;
 }
 
 .refreshing,
 .errorMessage,
 .noDevices {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   text-align: center;
+  padding: 40px 0;
+  color: #b3b3b3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
 }
 
 .refreshing span,
 .errorMessage span,
 .noDevices span {
-  font-size: 20px;
-  margin: 10px;
+  font-size: 28px;
+  margin-bottom: 6px;
+  color: #1db954;
 }
 
-.errorMessage button,
-.noDevices button {
-  background-color: #535353;
+.errorMessage button {
+  background: #333;
   color: white;
   border: none;
-  border-radius: 20px;
   padding: 8px 16px;
-  margin-top: 12px;
+  border-radius: 20px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background 0.2s ease;
 }
 
-.errorMessage button:hover,
-.noDevices button:hover {
-  background-color: #686868;
+.errorMessage button:hover {
+  background: #1db954;
 }
 
 .rotating {

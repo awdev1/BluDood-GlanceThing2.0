@@ -21,8 +21,7 @@ const Weather: React.FC<WeatherProps> = ({ visible }) => {
     showHumidity
   } = useContext(AppStateContext)
 
-  const currentHour = new Date().getHours()
-  const isNightTime = currentHour >= 18 || currentHour < 6
+  const isNightTime = weather ? weather.isDay === false : false
 
   const displayEmoji = isNightTime ? '🌙' : weatherEmoji
 
@@ -66,9 +65,7 @@ const Weather: React.FC<WeatherProps> = ({ visible }) => {
       ) : error ? (
         <div className={styles.error}>
           <div>Unable to get weather data</div>
-          <div className={styles.errorNote}>
-            Data will refresh automatically
-          </div>
+          <div className={styles.errorNote}>Data will refresh automatically</div>
         </div>
       ) : loading ? (
         <div className={styles.loading}>Loading weather data...</div>

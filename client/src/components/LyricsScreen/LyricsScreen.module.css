@@ -147,7 +147,7 @@
 
 .line {
   padding: 0.5rem 0;
-  font-size: 1.35rem;
+  font-size: 1.7rem;
   line-height: 1.6;
   text-align: center;
   color: var(--lyrics-color-inactive);
@@ -165,7 +165,7 @@
 .active {
   color: var(--lyrics-color-active);
   font-weight: 700;
-  font-size: 1.55rem;
+  font-size: 1.95rem;
   opacity: 1;
   text-shadow: 0 0 8px rgba(255, 255, 255, 0.35);
   transform: scale(1.05);
@@ -222,22 +222,22 @@
   }
 
   .line {
-    font-size: 1.1rem;
+    font-size: 1.7rem;
     padding: 0.4rem 0;
   }
 
   .active {
-    font-size: 1.4rem;
+    font-size: 1.95rem;
     font-weight: 700;
     text-shadow: 0 0 12px rgba(255, 255, 255, 0.6);
   }
 
   .trackTitle {
-    font-size: 1.25rem;
+    font-size: 1.5rem;
   }
 
   .trackArtist {
-    font-size: 0.9rem;
+    font-size: 1.2rem;
   }
 
   .closeBtn {

@@ -20,6 +20,7 @@ interface WeatherData {
   humidity: number
   maxTemperature: number
   minTemperature: number
+  isDay: boolean
 }
 
 interface AppSettings {

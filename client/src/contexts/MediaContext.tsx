@@ -157,7 +157,8 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
     )
       return
 
-    const currentTime = (playerData.track?.duration.current ?? 0) + 1025
+
+const currentTime = (playerData.track?.duration.current ?? 0) + 1500
 
     let foundIndex = -1
     const lines = lyricsData.lyrics.lines
@@ -194,7 +195,7 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
     if (foundIndex !== lyricsCurrentLineIndex) {
       setlyricsCurrentLineIndex(foundIndex)
     }
-  }, [playerData, lyricsData, lyricsCurrentLineIndex])
+  }, [playerData?.track.duration.current, lyricsData])
 
   const hasTrackChanged = useCallback((newData: PlaybackData) => {
     const currentTrack = playerDataRef.current?.track

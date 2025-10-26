@@ -20,6 +20,7 @@ export interface WeatherResponse {
     temperature_2m: number
     weather_code: number
     relative_humidity_2m: number
+    is_day: 0 | 1 
   }
   daily: {
     temperature_2m_max: number[]
@@ -67,7 +68,7 @@ export async function fetchWeather(
   const params = new URLSearchParams()
   params.append(
     'current',
-    'temperature_2m,weather_code,relative_humidity_2m'
+    'temperature_2m,weather_code,relative_humidity_2m,is_day' 
   )
   params.append('forecast_days', '1')
   params.append('daily', 'temperature_2m_max,temperature_2m_min')
@@ -90,6 +91,7 @@ export async function fetchWeather(
   const temps = data.current.temperature_2m
   const codes = data.current.weather_code
   const humidity = data.current.relative_humidity_2m
+  const isDay = data.current.is_day === 1
   const temperatureUnit = data.current_units.temperature_2m
   const maxTemp = data.daily.temperature_2m_max[0]
   const minTemp = data.daily.temperature_2m_min[0]
@@ -101,7 +103,8 @@ export async function fetchWeather(
     humidity: humidity,
     temperatureUnit: temperatureUnit,
     maxTemperature: Math.round(maxTemp),
-    minTemperature: Math.round(minTemp)
+    minTemperature: Math.round(minTemp),
+    isDay 
   }
 }
 

@@ -1359,6 +1359,24 @@ const AboutTab: React.FC = () => {
           >
             ItsRiprod
           </a>
+
+          <p>Developer of DeskThing, heavily inspired this project</p>
+        </div>
+      </div>
+          <div className={styles.credit}>
+        <img
+          src="https://avatars.githubusercontent.com/u/165525907?v=4"
+          alt=""
+        />
+        <div className={styles.info}>
+          <a
+            href="https://awdevsoftware.org"
+            target="_blank"
+            rel="noreferrer"
+          >
+            awdev
+          </a>
+
           <p>Developer of DeskThing, heavily inspired this project</p>
         </div>
       </div>

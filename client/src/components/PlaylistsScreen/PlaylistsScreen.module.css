@@ -7,13 +7,15 @@
   background: #121212;
   z-index: 999;
   transform: translateY(100%);
-  transition: 500ms ease;
+  transition: transform 0.3s ease-out;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   outline: none;
   color: white;
   touch-action: manipulation;
+  pointer-events: none;
+  contain: layout style paint;
 }
 
 .tabButton {
@@ -45,6 +47,8 @@
 
 .playlistsContainer[data-shown='true'] {
   transform: translateY(0);
+  pointer-events: auto;
+  will-change: transform;
 }
 
 .close {

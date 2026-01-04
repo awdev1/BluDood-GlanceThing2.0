@@ -13,6 +13,7 @@ import { MediaContext } from '@/contexts/MediaContext'
 import { debounce } from '@/lib/utils'
 import { Track, Playlist, Album } from '@/types/Playback.d'
 import likedSongsImage from '@/assets/likedSongs.jpg'
+import { useSwipeGesture } from '@/lib/useGestures'
 
 interface PlaylistsScreenProps {
   shown: boolean
@@ -447,6 +448,23 @@ const PlaylistsScreen: React.FC<PlaylistsScreenProps> = ({
     setNewlyLoadedIds([])
   }, [setShown, setNewlyLoadedIds])
 
+  const bind = useSwipeGesture({
+    onSwipeDown: () => {
+      close()
+    },
+    onSwipeRight: () => {
+      if (selectedPlaylist || selectedLikedSongs) {
+        setSelectedPlaylist(null)
+        setSelectedLikedSongs(false)
+        setPlaylistTracks([])
+      }
+    }
+  }, {
+    threshold: 60,
+    velocity: 0.4,
+    enabled: shown
+  })
+
   function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
     e.stopPropagation()
     e.preventDefault()
@@ -483,6 +501,7 @@ const PlaylistsScreen: React.FC<PlaylistsScreenProps> = ({
       autoFocus={true}
       onKeyDown={onKeyDown}
       onWheel={onWheel}
+      {...bind()}
     >
       <button onClick={() => close()} className={styles.close}>
         <span className="material-icons">keyboard_arrow_down</span>

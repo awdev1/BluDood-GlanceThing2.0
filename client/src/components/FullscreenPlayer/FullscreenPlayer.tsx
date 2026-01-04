@@ -4,12 +4,12 @@ import React, {
   useEffect,
   useRef,
   useState,
-  WheelEvent,
-  TouchEvent
+  WheelEvent
 } from 'react'
 
 import { MediaContext } from '@/contexts/MediaContext.tsx'
 import { AppStateContext } from '@/contexts/AppStateContext.tsx'
+import { useSwipeGesture, useTapGesture } from '@/lib/useGestures'
 
 import styles from './FullescreenPlayer.module.css'
 
@@ -59,6 +59,39 @@ const FullescreenPlayer: React.FC<FullescreenPlayerProps> = ({
   const volumeRef = useRef(volume)
   const lastVolumeChange = useRef(0)
   const [volumeAdjusted, setVolumeAdjusted] = useState(false)
+  const [swipeFeedback, setSwipeFeedback] = useState<'forward' | 'back' | 'close' | null>(null)
+
+  function triggerSwipeFeedback(direction: 'forward' | 'back' | 'close') {
+    setSwipeFeedback(direction)
+    setTimeout(() => setSwipeFeedback(null), 500)
+  }
+
+  const swipeBind = useSwipeGesture({
+    onSwipeLeft: () => {
+      actions.skipForward()
+      triggerSwipeFeedback('forward')
+    },
+    onSwipeRight: () => {
+      actions.skipBackward()
+      triggerSwipeFeedback('back')
+    },
+    onSwipeDown: () => {
+      setShown(false)
+      triggerSwipeFeedback('close')
+    }
+  }, {
+    threshold: 60,
+    velocity: 0.4,
+    enabled: shown
+  })
+
+  const tapBind = useTapGesture({
+    onDoubleTap: () => {
+      actions.playPause()
+    }
+  }, {
+    enabled: shown
+  })
 
   function volumeUp() {
     if (playerDataRef.current === null) return
@@ -103,47 +136,6 @@ const FullescreenPlayer: React.FC<FullescreenPlayerProps> = ({
     }
   }, [playerData])
 
-  const touchStartX = useRef<number | null>(null)
-  const touchEndX = useRef<number | null>(null)
-  const SWIPE_THRESHOLD = 60 // px threshold
-
-  const [swipeFeedback, setSwipeFeedback] = useState<'forward' | 'back' | null>(
-    null
-  )
-
-  function triggerSwipeFeedback(direction: 'forward' | 'back') {
-    setSwipeFeedback(direction)
-    setTimeout(() => setSwipeFeedback(null), 500)
-  }
-
-  function onTouchStart(e: TouchEvent<HTMLDivElement>) {
-    touchStartX.current = e.touches[0].clientX
-  }
-
-  function onTouchMove(e: TouchEvent<HTMLDivElement>) {
-    touchEndX.current = e.touches[0].clientX
-  }
-
-  function onTouchEnd() {
-    if (touchStartX.current === null || touchEndX.current === null) return
-
-    const deltaX = touchEndX.current - touchStartX.current
-
-    if (Math.abs(deltaX) > SWIPE_THRESHOLD) {
-      if (deltaX < 0) {
-        actions.skipForward()
-        triggerSwipeFeedback('forward')
-      } else {
-        actions.skipBackward()
-        triggerSwipeFeedback('back')
-      }
-    }
-
-    touchStartX.current = null
-    touchEndX.current = null
-  }
-
-
   return (
     <div
       className={styles.player}
@@ -151,9 +143,7 @@ const FullescreenPlayer: React.FC<FullescreenPlayerProps> = ({
       ref={playerRef}
       onKeyDown={onKeyDown}
       onWheel={onWheel}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
+      {...swipeBind()}
       tabIndex={-1}
     >
       <button
@@ -170,11 +160,15 @@ const FullescreenPlayer: React.FC<FullescreenPlayerProps> = ({
       {swipeFeedback && (
         <div
           className={`${styles.swipeFeedback} ${
-            swipeFeedback === 'forward' ? styles.forward : styles.back
+            swipeFeedback === 'forward' ? styles.forward : 
+            swipeFeedback === 'back' ? styles.back : 
+            styles.close
           }`}
         >
           <span className="material-icons">
-            {swipeFeedback === 'forward' ? 'skip_next' : 'skip_previous'}
+            {swipeFeedback === 'forward' ? 'skip_next' : 
+             swipeFeedback === 'back' ? 'skip_previous' : 
+             'keyboard_arrow_down'}
           </span>
         </div>
       )}
@@ -183,7 +177,7 @@ const FullescreenPlayer: React.FC<FullescreenPlayerProps> = ({
         <>
           {image && <img src={image} alt="" className={styles.background} />}
 
-          <div className={styles.track}>
+          <div className={styles.track} {...tapBind()}>
             <div className={styles.cover}>
               {image ? (
                 <img src={image} alt="" />

@@ -13,6 +13,7 @@ import Widgets from '@/components/Widgets/Widgets.tsx'
 import Menu from '@/components/Menu/Menu.tsx'
 import PlaylistsScreen from './components/PlaylistsScreen/PlaylistsScreen.tsx'
 import LyricsScreen from '@/components/LyricsScreen/LyricsScreen.tsx'
+import { useSwipeGesture } from '@/lib/useGestures'
 
 import styles from './App.module.css'
 
@@ -28,6 +29,26 @@ const App: React.FC = () => {
   } = useContext(AppStateContext)
 
   const { lyricsScreenShown, setLyricsScreenShown } = useContext(MediaContext)
+
+  const bind = useSwipeGesture({
+    onSwipeUp: () => {
+      if (!lyricsScreenShown && !playlistsShown && !playerShown) {
+        setPlayerShown(true)
+      }
+    },
+    onSwipeDown: () => {
+      if (lyricsScreenShown) {
+        setLyricsScreenShown(false)
+      } else if (playlistsShown) {
+        setPlaylistsShown(false)
+      } else if (playerShown) {
+        setPlayerShown(false)
+      }
+    }
+  }, {
+    threshold: 60,
+    velocity: 0.3
+  })
 
 useEffect(() => {
   const handleKeyDown = (e: KeyboardEvent) => {
@@ -65,7 +86,7 @@ useEffect(() => {
 
   return (
     <>
-      <div className={styles.app} data-blurred={blurred || !ready}>
+      <div className={styles.app} data-blurred={blurred || !ready} {...bind()}>
         {showStatusBar && <Statusbar />}
         <Widgets />
 

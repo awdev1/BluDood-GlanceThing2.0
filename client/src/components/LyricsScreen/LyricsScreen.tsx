@@ -1,6 +1,7 @@
 import React, { useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { MediaContext } from '@/contexts/MediaContext.tsx'
 import styles from './LyricsScreen.module.css'
+import { useSwipeGesture } from '@/lib/useGestures'
 
 interface LyricsScreenProps {
     shown: boolean
@@ -24,13 +25,23 @@ const LyricsScreen: React.FC<LyricsScreenProps> = ({ shown, setShown }) => {
     const [originalBg, setOriginalBg] = useState<string | null>(null)
     const [originalInactive, setOriginalInactive] = useState<string | null>(null)
     const [originalText, setOriginalText] = useState<string | null>(null)
+    const hasInitializedColors = useRef(false)
 
     useEffect(() => {
-        const root = getComputedStyle(document.documentElement)
-        setOriginalPrimary(root.getPropertyValue('--color-primary').trim())
-        setOriginalBg(root.getPropertyValue('--lyrics-color-background').trim())
-        setOriginalInactive(root.getPropertyValue('--lyrics-color-inactive').trim())
-        setOriginalText(root.getPropertyValue('--lyrics-color-messaging').trim())
+        if (!hasInitializedColors.current) {
+            const root = getComputedStyle(document.documentElement)
+            const primary = root.getPropertyValue('--color-primary').trim()
+            const bg = root.getPropertyValue('--lyrics-color-background').trim()
+            const inactive = root.getPropertyValue('--lyrics-color-inactive').trim()
+            const text = root.getPropertyValue('--lyrics-color-messaging').trim()
+            
+            if (primary) setOriginalPrimary(primary)
+            if (bg) setOriginalBg(bg)
+            if (inactive) setOriginalInactive(inactive)
+            if (text) setOriginalText(text)
+            
+            hasInitializedColors.current = true
+        }
     }, [])
 
     const scrollToActiveLine = useCallback(() => {
@@ -54,12 +65,21 @@ const LyricsScreen: React.FC<LyricsScreenProps> = ({ shown, setShown }) => {
 
     const setColors = useCallback(
         (bg?: string, txt?: string, inactive?: string) => {
-            document.documentElement.style.setProperty('--color-primary', bg ?? originalPrimary ?? '')
-            document.documentElement.style.setProperty('--lyrics-color-background', bg ?? originalBg ?? '')
-            document.documentElement.style.setProperty('--lyrics-color-active', txt ?? originalText ?? '')
-            document.documentElement.style.setProperty('--lyrics-color-inactive', inactive ?? originalInactive ?? '')
-            document.documentElement.style.setProperty('--lyrics-color-passed', txt ?? originalText ?? '')
-            document.documentElement.style.setProperty('--lyrics-color-messaging', inactive ?? originalText ?? '')
+            if (bg === undefined && txt === undefined && inactive === undefined) {
+                if (originalPrimary) document.documentElement.style.setProperty('--color-primary', originalPrimary)
+                if (originalBg) document.documentElement.style.setProperty('--lyrics-color-background', originalBg)
+                if (originalText) document.documentElement.style.setProperty('--lyrics-color-active', originalText)
+                if (originalInactive) document.documentElement.style.setProperty('--lyrics-color-inactive', originalInactive)
+                if (originalText) document.documentElement.style.setProperty('--lyrics-color-passed', originalText)
+                if (originalInactive) document.documentElement.style.setProperty('--lyrics-color-messaging', originalInactive)
+            } else {
+                document.documentElement.style.setProperty('--color-primary', bg ?? originalPrimary ?? '')
+                document.documentElement.style.setProperty('--lyrics-color-background', bg ?? originalBg ?? '')
+                document.documentElement.style.setProperty('--lyrics-color-active', txt ?? originalText ?? '')
+                document.documentElement.style.setProperty('--lyrics-color-inactive', inactive ?? originalInactive ?? '')
+                document.documentElement.style.setProperty('--lyrics-color-passed', txt ?? originalText ?? '')
+                document.documentElement.style.setProperty('--lyrics-color-messaging', inactive ?? originalText ?? '')
+            }
         },
         [originalPrimary, originalBg, originalInactive, originalText]
     )
@@ -101,10 +121,14 @@ const LyricsScreen: React.FC<LyricsScreenProps> = ({ shown, setShown }) => {
     useEffect(() => {
         if (!shown && !closing) {
             setClosing(true)
-            const timeout = setTimeout(() => setClosing(false), 300)
+            const timeout = setTimeout(() => {
+                setClosing(false)
+                // Only restore colors after closing animation completes
+                setColors()
+            }, 300)
             return () => clearTimeout(timeout)
         }
-    }, [shown, closing])
+    }, [shown, closing, setColors])
 
     useEffect(() => {
         if (shown && containerRef.current) {
@@ -114,8 +138,17 @@ const LyricsScreen: React.FC<LyricsScreenProps> = ({ shown, setShown }) => {
 
     const close = useCallback(() => {
         setShown(false)
-        setTimeout(() => setColors(), 300)
-    }, [setShown, setColors])
+    }, [setShown])
+
+    const bind = useSwipeGesture({
+        onSwipeDown: () => {
+            close()
+        }
+    }, {
+        threshold: 60,
+        velocity: 0.4,
+        enabled: shown
+    })
 
     if (!shown && !closing && !hasLyrics) return null
 
@@ -126,6 +159,7 @@ const LyricsScreen: React.FC<LyricsScreenProps> = ({ shown, setShown }) => {
             ref={containerRef}
             tabIndex={0}
             aria-hidden={!shown && !closing}
+            {...bind()}
         >
             <button onClick={close} className={styles.closeBtn} aria-label="Close lyrics">
                 <span className="material-icons">keyboard_arrow_down</span>
@@ -155,7 +189,7 @@ const LyricsScreen: React.FC<LyricsScreenProps> = ({ shown, setShown }) => {
                                 style={{ display: syncLyric ? 'block' : 'none' }}
                             />
 
-                            {(lyricsData?.lyrics?.lines ?? []).map((line: any, i: number) => (
+                            {(lyricsData?.lyrics?.lines ?? []).map((line: { words: string }, i: number) => (
                                 <div
                                     key={i}
                                     className={`${styles.line} ${i === lyricsCurrentLineIndex ? styles.active : ''

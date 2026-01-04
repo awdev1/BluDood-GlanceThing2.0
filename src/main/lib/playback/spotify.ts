@@ -1,13 +1,10 @@
 import axios, { AxiosInstance } from 'axios'
 import { TOTP } from 'totp-generator'
-import { WebSocket } from 'ws'
 
 import { BasePlaybackHandler } from './BasePlaybackHandler.js'
 import {
   log,
   LogLevel,
-  base32FromBytes,
-  cleanBuffer,
   intToRgb
 } from '../utils.js'
 
@@ -32,21 +29,7 @@ import {
   getLyrics as getFallbackLyrics
 } from '../lyric.js'
 
-async function subscribe(connection_id: string, token: string) {
-  return await axios.put(
-    'https://api.spotify.com/v1/me/notifications/player',
-    null,
-    {
-      params: {
-        connection_id
-      },
-      headers: {
-        Authorization: `Bearer ${token}`
-      },
-      validateStatus: () => true
-    }
-  )
-}
+
 
 async function generateTotp(): Promise<{
   otp: string
@@ -229,8 +212,9 @@ class SpotifyHandler extends BasePlaybackHandler {
   config: SpotifyConfig | null = null
   accessToken: string | null = null
   webToken: string | null = null
-  ws: WebSocket | null = null
   instance: AxiosInstance | null = null
+  pollingInterval: NodeJS.Timeout | null = null
+  lastPlaybackState: string | null = null
 
   playlistImageCache: Cache<string>
   cacheCleanupInterval: NodeJS.Timeout | null = null
@@ -238,7 +222,6 @@ class SpotifyHandler extends BasePlaybackHandler {
   constructor() {
     super()
 
-    // 7 days expiration for playlist image cache
     this.playlistImageCache = new Cache<string>(
       7 * 24 * 60 * 60 * 1000,
       'spotify_playlist_image_cache',
@@ -246,7 +229,6 @@ class SpotifyHandler extends BasePlaybackHandler {
     )
   }
 
-  // Utility function to fetch and cache images
   private async fetchImage(
     imageUrl: string,
     cacheKey: string
@@ -334,69 +316,42 @@ class SpotifyHandler extends BasePlaybackHandler {
       return null
     })
 
-    if (this.webToken) {
-      this.ws = new WebSocket(
-        `wss://dealer.spotify.com/?access_token=${this.webToken}`
-      )
-      await this.start()
-    } else {
-      this.emit('open', this.name)
-    }
+    this.emit('open', this.name)
+    this.startPolling()
   }
 
-  async start() {
-    if (!this.ws) return
-    const ping = () => this.ws!.send('{"type":"ping"}')
-
-    this.ws.on('open', () => {
-      ping()
-      const interval = setInterval(() => {
-        if (!this.ws) return clearInterval(interval)
-        ping()
-      }, 15000)
-    })
-
-    this.ws.on('message', async d => {
-      const msg = JSON.parse(d.toString())
-      if (msg.headers?.['Spotify-Connection-Id']) {
-        await subscribe(
-          msg.headers['Spotify-Connection-Id'],
-          this.webToken!
-        )
-          .then(() => this.emit('open', this.name))
-          .catch(err => this.emit('error', err))
-
-        return
-      }
-      const event = msg.payloads?.[0]?.events?.[0]
-      if (!event) return
-
-      if (event.type === 'PLAYER_STATE_CHANGED') {
-        const state = event.event.state
-
-        if (state.currently_playing_type === 'track') {
-          this.emit('playback', filterData(state))
-        } else if (state.currently_playing_type === 'episode') {
-          const current = await this.getCurrent()
-          if (!current) return
-
-          this.emit('playback', filterData(current))
+  startPolling() {
+    const poll = async () => {
+      try {
+        const current = await this.getCurrent()
+        const currentState = current ? JSON.stringify(current) : null
+        
+        if (currentState !== this.lastPlaybackState) {
+          this.lastPlaybackState = currentState
+          const playbackData = current ? filterData(current) : null
+          this.emit('playback', playbackData)
         }
-      } else if (event.type === 'DEVICE_STATE_CHANGED') {
-        const devices = event.event.devices
-        if (devices.some(d => d.is_active)) return
-        this.emit('playback', null)
+      } catch (error) {
+        log(`Polling error: ${error}`, 'Spotify', LogLevel.ERROR)
       }
-    })
+    }
 
-    this.ws.on('close', () => this.emit('close'))
+    poll()
+    
+    this.pollingInterval = setInterval(poll, 1000)
+  }
 
-    this.ws.on('error', err => this.emit('error', err))
+  stopPolling() {
+    if (this.pollingInterval) {
+      clearInterval(this.pollingInterval)
+      this.pollingInterval = null
+    }
   }
 
   async cleanup(): Promise<void> {
     log('Cleaning up', 'Spotify')
 
+    this.stopPolling()
     cleanupLyricsCache()
     this.playlistImageCache.save()
     this.playlistImageCache.clear()
@@ -406,10 +361,6 @@ class SpotifyHandler extends BasePlaybackHandler {
       this.cacheCleanupInterval = null
     }
 
-    if (!this.ws) return
-    this.ws.removeAllListeners()
-    this.ws.close()
-    this.ws = null
     this.removeAllListeners()
   }
 
@@ -596,7 +547,6 @@ class SpotifyHandler extends BasePlaybackHandler {
         LogLevel.WARN
       )
 
-      // Fallback to lyric.ts implementation
       try {
         const playbackData = filterData({
           ...current,
@@ -616,7 +566,6 @@ class SpotifyHandler extends BasePlaybackHandler {
         )
       }
 
-      // If both fail, cache and return no lyrics message
       const noLyricsMsg = 'No lyrics for this track'
       const noLyricsResponse = { message: noLyricsMsg }
       lyricsCache.set(trackId, noLyricsResponse)

@@ -65,6 +65,8 @@ declare global {
       openDevTools: () => void
       getChannel: () => Promise<'stable' | 'nightly'>
       updateWeather: () => Promise<boolean>
+      openExternal: (url: string) => Promise<void>
+      getUpdateAvailable: () => Promise<{ version: string; url: string } | null>
     }
   }
 }

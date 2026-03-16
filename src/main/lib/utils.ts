@@ -10,7 +10,7 @@ import { getStorageValue } from './storage.js'
 export const isDev = () => getStorageValue('devMode') === true
 
 export const random = (len: number) =>
-  crypto.randomBytes(len).toString('hex')
+  crypto.randomBytes(len / 2).toString('hex')
 
 export async function execAsync(cmd: string): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -113,6 +113,30 @@ export async function findOpenPort() {
       const port = (server.address() as net.AddressInfo).port
       server.close(() => resolve(port))
     })
+  })
+}
+
+export async function checkInternet(): Promise<boolean> {
+  return new Promise(resolve => {
+    const socket = new net.Socket()
+
+    socket.setTimeout(5000)
+
+    socket.on('connect', () => {
+      socket.destroy()
+      resolve(true)
+    })
+
+    socket.on('timeout', () => {
+      socket.destroy()
+      resolve(false)
+    })
+
+    socket.on('error', () => {
+      resolve(false)
+    })
+
+    socket.connect(80, 'bludood.com')
   })
 }
 

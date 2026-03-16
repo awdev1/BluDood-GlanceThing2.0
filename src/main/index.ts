@@ -76,6 +76,7 @@ import {
 import { updateWeather } from './lib/weather.js'
 
 let mainWindow: BrowserWindow | null = null
+let pendingUpdate: { version: string; url: string } | null = null
 
 const UpdateInterval = 1000 * 60 * 60 // Check every hour
 const UpdateURL = 'https://api.github.com/repos/awdev1/BluDood-GlanceThing2.0/releases/latest'
@@ -94,7 +95,9 @@ async function checkForUpdates() {
 
     if (latestVersion !== currentVersion) {
       log(`New version available: ${latestVersion}`, 'Updater', LogLevel.INFO)
+      pendingUpdate = { version: latestVersion, url: response.data.html_url }
       showUpdateNotification(latestVersion, response.data.html_url)
+      mainWindow?.webContents.send('updateAvailable', pendingUpdate)
     } else {
       log(`No new updates available. Current version: ${currentVersion}`, 'Updater', LogLevel.INFO)
 
@@ -544,7 +547,11 @@ async function setupIpcHandlers() {
     await checkForUpdates()
   })
 
+  ipcMain.handle('openExternal', (_event, url: string) => {
+    shell.openExternal(url)
+  })
 
+  ipcMain.handle('getUpdateAvailable', () => pendingUpdate)
 }
 
 async function setupTray() {

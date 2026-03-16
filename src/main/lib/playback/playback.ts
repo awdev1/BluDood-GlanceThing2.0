@@ -13,7 +13,7 @@ import {
   LyricsResponse
 } from '../../types/Playback.js'
 
-import { log } from '../utils.js'
+import { log, checkInternet } from '../utils.js'
 import { getPlaybackHandlerConfig, setStorageValue } from '../storage.js'
 
 const handlers: BasePlaybackHandler[] = [spotify, spotifyfree, native]
@@ -43,14 +43,32 @@ class PlaybackManager extends (EventEmitter as new () => TypedEmitter<PlaybackHa
       return setStorageValue('playbackHandler', 'none')
     }
 
+    if (handler.requiresInternet) {
+      let online = await checkInternet()
+      while (!online) {
+        log('Waiting for internet connection...', 'Playback')
+        await new Promise(r => setTimeout(r, 5000))
+        online = await checkInternet()
+      }
+    }
+
     handler.on('playback', data => this.emit('playback', data))
     handler.on('open', () => this.emit('open', handlerName))
     handler.on('close', () => this.emit('close'))
     handler.on('error', error => this.emit('error', error))
 
-    await handler.setup(config)
+    try {
+      await handler.setup(config)
+    } catch (err) {
+      log(`Handler setup failed: ${err}`, 'Playback')
+      return
+    }
 
-    this.emit('playback', await handler.getPlayback())
+    try {
+      this.emit('playback', await handler.getPlayback())
+    } catch {
+      this.emit('playback', null)
+    }
 
     this.currentHandler = handler
   }
@@ -61,6 +79,11 @@ class PlaybackManager extends (EventEmitter as new () => TypedEmitter<PlaybackHa
   ): Promise<boolean> {
     const handler = this.getHandler(handlerName)
     return handler.validateConfig(config)
+  }
+
+  requiresInternet(handlerName: string): boolean {
+    const handler = this.getHandler(handlerName)
+    return handler.requiresInternet
   }
 
   async cleanup() {

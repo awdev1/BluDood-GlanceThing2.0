@@ -203,6 +203,7 @@ interface SpotifyConfig {
 
 class SpotifyHandler extends BasePlaybackHandler {
   name: string = 'spotifyfree'
+  requiresInternet: boolean = true
   config: SpotifyConfig | null = null
   accessToken: string | null = null
   webToken: string | null = null

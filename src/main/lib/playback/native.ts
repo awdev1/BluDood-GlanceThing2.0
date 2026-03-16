@@ -199,6 +199,7 @@ interface NativeConfig {
 
 class NativeHandler extends BasePlaybackHandler {
   name: string = 'native'
+  requiresInternet: boolean = false
 
   config: NativeConfig | null = null
   instance: NowPlaying | null = null

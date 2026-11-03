@@ -6,7 +6,7 @@ import { updateWeather } from '../weather.js'
 export const name = 'weather'
 
 export const setup: SetupFunction = async () => {
-  const weatherJob = cron.schedule('0 * * * *', updateWeather)
+  const weatherJob = cron.schedule('*/30 * * * * *', updateWeather)
 
   return async () => {
     weatherJob.stop()

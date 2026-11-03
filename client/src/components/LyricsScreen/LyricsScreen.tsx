@@ -4,6 +4,7 @@ import styles from './LyricsScreen.module.css'
 import { useSwipeGesture } from '@/lib/useGestures'
 import { formatTime, getInterludeProgress, isInterlude } from '@/lib/utils'
 import Marquee from '@/components/Marquee/Marquee'
+import CoverBackground from '@/components/CoverBackground/CoverBackground'
 import InterludeDots from '@/components/InterludeDots/InterludeDots'
 import LyricText from '@/components/LyricText/LyricText'
 
@@ -28,53 +29,6 @@ const LyricsScreen: React.FC<LyricsScreenProps> = ({ shown, setShown }) => {
     )
 
     const containerRef = useRef<HTMLDivElement>(null)
-    const backCanvasRef = useRef<HTMLCanvasElement>(null)
-    const frontCanvasRef = useRef<HTMLCanvasElement>(null)
-
-    useEffect(() => {
-        const canvases = [backCanvasRef.current, frontCanvasRef.current]
-        if (!image) {
-            canvases.forEach(c => c?.getContext('2d')?.clearRect(0, 0, c.width, c.height))
-            return
-        }
-
-        const img = new Image()
-        img.onload = () => {
-            canvases.forEach((canvas, layer) => {
-                if (!canvas) return
-                const size = 64
-                canvas.width = size
-                canvas.height = size
-                const ctx = canvas.getContext('2d')
-                if (!ctx) return
-
-                ctx.clearRect(0, 0, size, size)
-                ctx.filter = 'blur(6px) saturate(1.6)'
-
-                const copies =
-                    layer === 0
-                        ? [
-                            { x: 0.5, y: 0.5, scale: 1.4, angle: 0 },
-                            { x: 0.2, y: 0.8, scale: 0.8, angle: 120 },
-                            { x: 0.8, y: 0.2, scale: 0.7, angle: 240 }
-                        ]
-                        : [
-                            { x: 0.25, y: 0.3, scale: 0.7, angle: 60 },
-                            { x: 0.75, y: 0.75, scale: 0.8, angle: 180 }
-                        ]
-
-                copies.forEach(({ x, y, scale, angle }) => {
-                    const w = size * scale
-                    ctx.save()
-                    ctx.translate(size * x, size * y)
-                    ctx.rotate((angle * Math.PI) / 180)
-                    ctx.drawImage(img, -w / 2, -w / 2, w, w)
-                    ctx.restore()
-                })
-            })
-        }
-        img.src = image
-    }, [image])
     const lyricsContentRef = useRef<HTMLDivElement>(null)
     const activeLineRef = useRef<HTMLDivElement | null>(null)
 
@@ -221,10 +175,7 @@ const LyricsScreen: React.FC<LyricsScreenProps> = ({ shown, setShown }) => {
                 <span className="material-icons">keyboard_arrow_down</span>
             </button>
 
-            <div className={styles.background}>
-                <canvas ref={backCanvasRef} className={styles.back} />
-                <canvas ref={frontCanvasRef} className={styles.front} />
-            </div>
+            <CoverBackground image={image} running={shown} />
 
             <div className={styles.content}>
                 {playerData?.track && (

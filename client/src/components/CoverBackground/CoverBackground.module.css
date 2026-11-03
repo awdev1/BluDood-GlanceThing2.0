@@ -1,0 +1,52 @@
+.background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  background: var(--lyrics-color-background);
+}
+
+.background::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.background canvas {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1000px;
+  height: 1000px;
+  margin: -500px 0 0 -500px;
+  animation: spin 60s linear infinite;
+  animation-play-state: paused;
+  will-change: transform;
+}
+
+.background .front {
+  opacity: 0.6;
+  animation-duration: 45s;
+  animation-direction: reverse;
+}
+
+.background[data-running='true'] canvas {
+  animation-play-state: running;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}

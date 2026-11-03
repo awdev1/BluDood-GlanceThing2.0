@@ -11,6 +11,7 @@ import BaseWidget from '../BaseWidget/BaseWidget'
 import { getInterludeProgress, isInterlude } from '@/lib/utils'
 import InterludeDots from '@/components/InterludeDots/InterludeDots'
 import LyricText from '@/components/LyricText/LyricText'
+import CoverBackground from '@/components/CoverBackground/CoverBackground'
 
 import styles from './Lyrics.module.css'
 
@@ -27,7 +28,9 @@ const Lyrics: React.FC<LyricsProps> = ({ visible, sectionActive }) => {
     lyricsLoading,
     lyricsCurrentLineIndex,
     setLyricsScreenShown,
-    playerData
+    lyricsScreenShown,
+    playerData,
+    image
   } = useContext(MediaContext)
 
   const [error, setError] = useState<string | null>(null)
@@ -165,6 +168,7 @@ const Lyrics: React.FC<LyricsProps> = ({ visible, sectionActive }) => {
             <div className={styles.lineContent}>
               {isInterlude(line.words) ? (
                 <InterludeDots
+                  className={styles.dots}
                   active={index === lyricsCurrentLineIndex}
                   playing={!!playerData?.isPlaying}
                   progress={getInterludeProgress(
@@ -221,6 +225,12 @@ const Lyrics: React.FC<LyricsProps> = ({ visible, sectionActive }) => {
         autoFocus
         onKeyDown={handleKeyDown}
       >
+        {visible && (
+          <CoverBackground
+            image={image}
+            running={!lyricsScreenShown && !!playerData?.isPlaying}
+          />
+        )}
         {renderContent()}
       </div>
     </BaseWidget>

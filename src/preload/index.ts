@@ -45,7 +45,8 @@ enum IPCHandler {
   UpdateWeather = 'updateWeather',
   FindOpenPort = 'findOpenPort',
   IsPortOpen = 'isPortOpen',
-  RestoreCarThing = 'restoreCarThing'
+  RestoreCarThing = 'restoreCarThing',
+  GetPlaybackAuthExpired = 'getPlaybackAuthExpired'
 }
 
 // Custom APIs for renderer
@@ -125,7 +126,9 @@ const api = {
   findOpenPort: () => ipcRenderer.invoke(IPCHandler.FindOpenPort),
   isPortOpen: (port: number) =>
     ipcRenderer.invoke(IPCHandler.IsPortOpen, port),
-  restoreCarThing: () => ipcRenderer.invoke(IPCHandler.RestoreCarThing)
+  restoreCarThing: () => ipcRenderer.invoke(IPCHandler.RestoreCarThing),
+  getPlaybackAuthExpired: () =>
+    ipcRenderer.invoke(IPCHandler.GetPlaybackAuthExpired)
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

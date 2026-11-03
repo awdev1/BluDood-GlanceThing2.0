@@ -307,7 +307,8 @@ enum IPCHandler {
   TestNotification = 'testNotification',
   FindOpenPort = 'findOpenPort',
   IsPortOpen = 'isPortOpen',
-  RestoreCarThing = 'restoreCarThing'
+  RestoreCarThing = 'restoreCarThing',
+  GetPlaybackAuthExpired = 'getPlaybackAuthExpired'
 }
 
 async function setupIpcHandlers() {
@@ -563,6 +564,10 @@ async function setupIpcHandlers() {
   })
 
   ipcMain.handle('getUpdateAvailable', () => pendingUpdate)
+
+  ipcMain.handle(IPCHandler.GetPlaybackAuthExpired, () => {
+    return playbackManager.authExpired
+  })
 
   ipcMain.handle(IPCHandler.RestoreCarThing, async () => {
     await restore(null)

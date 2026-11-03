@@ -73,6 +73,7 @@ declare global {
       findOpenPort: () => Promise<number>
       isPortOpen: (port: number) => Promise<boolean>
       restoreCarThing: () => Promise<void>
+      getPlaybackAuthExpired: () => Promise<boolean>
     }
   }
 }

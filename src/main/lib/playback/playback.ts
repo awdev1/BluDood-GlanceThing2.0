@@ -20,6 +20,7 @@ const handlers: BasePlaybackHandler[] = [spotify, spotifyfree, native]
 
 class PlaybackManager extends (EventEmitter as new () => TypedEmitter<PlaybackHandlerEvents>) {
   private currentHandler: BasePlaybackHandler | null = null
+  authExpired: boolean = false
 
   private getHandler(name: string): BasePlaybackHandler {
     const handler = handlers.find(handler => handler.name === name)
@@ -30,6 +31,7 @@ class PlaybackManager extends (EventEmitter as new () => TypedEmitter<PlaybackHa
 
   async setup(handlerName: string) {
     if (this.currentHandler) await this.cleanup()
+    this.authExpired = false
     if (handlerName === 'none') return
     log(`Setting up handler ${handlerName}...`, 'Playback')
 
@@ -56,6 +58,10 @@ class PlaybackManager extends (EventEmitter as new () => TypedEmitter<PlaybackHa
     handler.on('open', () => this.emit('open', handlerName))
     handler.on('close', () => this.emit('close'))
     handler.on('error', error => this.emit('error', error))
+    handler.on('authExpired', () => {
+      this.authExpired = true
+      this.emit('authExpired')
+    })
 
     try {
       await handler.setup(config)

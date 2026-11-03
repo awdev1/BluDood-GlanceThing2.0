@@ -43,6 +43,7 @@ export type PlaybackHandlerEvents = {
   open: (handlerName?: string) => void
   close: () => void
   error: (err: Error) => void
+  authExpired: () => void
 }
 
 export interface LyricsResponse {

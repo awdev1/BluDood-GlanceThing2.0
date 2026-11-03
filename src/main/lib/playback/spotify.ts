@@ -98,6 +98,9 @@ export async function refreshAccessToken(
     }
   )
 
+  if (res.status === 400 && res.data?.error === 'invalid_grant')
+    throw new Error('invalid_grant')
+
   if (res.status !== 200) return null
 
   return res.data.access_token
@@ -216,6 +219,7 @@ class SpotifyHandler extends BasePlaybackHandler {
   instance: AxiosInstance | null = null
   pollingInterval: NodeJS.Timeout | null = null
   lastPlaybackState: string | null = null
+  authExpired: boolean = false
 
   playlistImageCache: Cache<string>
   cacheCleanupInterval: NodeJS.Timeout | null = null
@@ -228,6 +232,23 @@ class SpotifyHandler extends BasePlaybackHandler {
       'spotify_playlist_image_cache',
       'playlist image'
     )
+  }
+
+  private handleTokenError(err: Error) {
+    if (err.message !== 'invalid_grant') {
+      this.emit('error', err)
+      return
+    }
+
+    if (this.authExpired) return
+    this.authExpired = true
+    log(
+      'Refresh token expired, re-authentication required',
+      'Spotify',
+      LogLevel.WARN
+    )
+    this.stopPolling()
+    this.emit('authExpired')
   }
 
   private async fetchImage(
@@ -261,6 +282,7 @@ class SpotifyHandler extends BasePlaybackHandler {
     log('Setting up', 'Spotify')
 
     this.config = config
+    this.authExpired = false
 
     initializeLyricsCache()
     this.playlistImageCache.load()
@@ -284,13 +306,14 @@ class SpotifyHandler extends BasePlaybackHandler {
 
     this.instance.interceptors.response.use(async res => {
       if (res.status === 401) {
+        if (this.authExpired) return res
         log('Refreshing token...', 'Spotify')
         this.accessToken = await refreshAccessToken(
           this.config!.clientId,
           this.config!.clientSecret,
           this.config!.refreshToken
         ).catch(err => {
-          this.emit('error', err)
+          this.handleTokenError(err)
           return null
         })
 
@@ -313,12 +336,12 @@ class SpotifyHandler extends BasePlaybackHandler {
       this.config!.clientSecret,
       this.config!.refreshToken
     ).catch(err => {
-      this.emit('error', err)
+      this.handleTokenError(err)
       return null
     })
 
     this.emit('open', this.name)
-    this.startPolling()
+    if (!this.authExpired) this.startPolling()
   }
 
   startPolling() {

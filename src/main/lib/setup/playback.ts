@@ -1,7 +1,9 @@
+import { BrowserWindow, Notification } from 'electron'
+
 import { playbackManager } from '../playback/playback.js'
 import { getStorageValue } from '../storage.js'
 import { serverManager } from '../server.js'
-import { checkInternet, log } from '../utils.js'
+import { checkInternet, log, resourceFolder } from '../utils.js'
 
 import { AuthenticatedWebSocket } from '../../types/WebSocketServer.js'
 import { SetupFunction } from '../../types/WebSocketSetup.js'
@@ -60,6 +62,27 @@ export const setup: SetupFunction = async () => {
 
   playbackManager.on('open', (handlerName?: string) => {
     log(`Opened with handler ${handlerName}`, 'PlaybackManager')
+  })
+
+  playbackManager.on('authExpired', () => {
+    BrowserWindow.getAllWindows().forEach(w =>
+      w.webContents.send('playbackAuthExpired')
+    )
+
+    const notification = new Notification({
+      title: 'Spotify login expired',
+      body: 'Your Spotify token has expired. Click here to sign in again.',
+      icon: resourceFolder ? `${resourceFolder}/icon.png` : undefined
+    })
+
+    notification.on('click', () => {
+      const win = BrowserWindow.getAllWindows()[0]
+      if (!win) return
+      win.show()
+      win.focus()
+    })
+
+    notification.show()
   })
 
   playbackManager.on('error', err => {

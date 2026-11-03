@@ -10,6 +10,7 @@ import { MediaContext } from '@/contexts/MediaContext.tsx'
 import BaseWidget from '../BaseWidget/BaseWidget'
 import { getInterludeProgress, isInterlude } from '@/lib/utils'
 import InterludeDots from '@/components/InterludeDots/InterludeDots'
+import LyricText from '@/components/LyricText/LyricText'
 
 import styles from './Lyrics.module.css'
 
@@ -173,7 +174,7 @@ const Lyrics: React.FC<LyricsProps> = ({ visible, sectionActive }) => {
                   )}
                 />
               ) : (
-                line.words
+                <LyricText words={line.words} />
               )}
             </div>
           </div>

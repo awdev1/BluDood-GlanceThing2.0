@@ -1,0 +1,10 @@
+.background {
+  display: block;
+  margin-top: 0.2em;
+  font-size: 0.75em;
+  opacity: 0.8;
+}
+
+.background[data-alone='true'] {
+  margin-top: 0;
+}

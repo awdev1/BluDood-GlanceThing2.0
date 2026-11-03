@@ -5,6 +5,7 @@ import { useSwipeGesture } from '@/lib/useGestures'
 import { formatTime, getInterludeProgress, isInterlude } from '@/lib/utils'
 import Marquee from '@/components/Marquee/Marquee'
 import InterludeDots from '@/components/InterludeDots/InterludeDots'
+import LyricText from '@/components/LyricText/LyricText'
 
 interface LyricsScreenProps {
     shown: boolean
@@ -286,7 +287,7 @@ const LyricsScreen: React.FC<LyricsScreenProps> = ({ shown, setShown }) => {
                                             className={styles.dots}
                                         />
                                     ) : (
-                                        line.words
+                                        <LyricText words={line.words} />
                                     )}
                                 </div>
                             )

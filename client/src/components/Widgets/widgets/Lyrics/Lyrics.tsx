@@ -8,7 +8,8 @@ import React, {
 } from 'react'
 import { MediaContext } from '@/contexts/MediaContext.tsx'
 import BaseWidget from '../BaseWidget/BaseWidget'
-import { isInterlude } from '@/lib/utils'
+import { getInterludeProgress, isInterlude } from '@/lib/utils'
+import InterludeDots from '@/components/InterludeDots/InterludeDots'
 
 import styles from './Lyrics.module.css'
 
@@ -24,7 +25,8 @@ const Lyrics: React.FC<LyricsProps> = ({ visible, sectionActive }) => {
     lyricsData,
     lyricsLoading,
     lyricsCurrentLineIndex,
-    setLyricsScreenShown
+    setLyricsScreenShown,
+    playerData
   } = useContext(MediaContext)
 
   const [error, setError] = useState<string | null>(null)
@@ -161,9 +163,15 @@ const Lyrics: React.FC<LyricsProps> = ({ visible, sectionActive }) => {
           >
             <div className={styles.lineContent}>
               {isInterlude(line.words) ? (
-                <span className={`material-icons ${styles.note}`}>
-                  music_note
-                </span>
+                <InterludeDots
+                  active={index === lyricsCurrentLineIndex}
+                  playing={!!playerData?.isPlaying}
+                  progress={getInterludeProgress(
+                    lyricsData.lyrics.lines,
+                    lyricsCurrentLineIndex,
+                    playerData?.track?.duration.current
+                  )}
+                />
               ) : (
                 line.words
               )}

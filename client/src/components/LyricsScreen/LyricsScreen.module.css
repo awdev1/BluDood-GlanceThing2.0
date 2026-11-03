@@ -217,33 +217,5 @@
 }
 
 .dots {
-  display: flex;
-  height: 32px;
-  align-items: center;
-  transform-origin: left center;
-}
-
-.dots span {
-  margin-right: 10px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: #fff;
-  opacity: 0.3;
-  transition: opacity 1s linear;
-}
-
-.dots[data-playing='true'] {
-  animation: breathe 2.5s ease-in-out infinite;
-}
-
-@keyframes breathe {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-
-  50% {
-    transform: scale(1.15);
-  }
+  color: #fff;
 }

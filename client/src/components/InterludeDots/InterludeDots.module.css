@@ -1,0 +1,31 @@
+.dots {
+  display: flex;
+  height: 1.25em;
+  align-items: center;
+  transform-origin: left center;
+}
+
+.dots span {
+  margin-right: 0.38em;
+  width: 0.54em;
+  height: 0.54em;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.3;
+  transition: opacity 1s linear;
+}
+
+.dots[data-playing='true'] {
+  animation: breathe 2.5s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.15);
+  }
+}

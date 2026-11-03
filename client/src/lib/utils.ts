@@ -21,6 +21,22 @@ export function isInterlude(words: string) {
   return !words.replace(/[♩♪♫♬]/g, '').trim()
 }
 
+export function getInterludeProgress(
+  lines: { words: string; startTimeMs: string }[],
+  index: number,
+  currentMs: number | undefined
+) {
+  const line = lines[index]
+  if (!line || !isInterlude(line.words)) return 0
+
+  const start = parseInt(line.startTimeMs)
+  const next = lines[index + 1]
+  const end = next ? parseInt(next.startTimeMs) : start + 3000
+  const now = (currentMs ?? start) + 1500
+
+  return Math.min(Math.max((now - start) / Math.max(end - start, 1), 0), 1)
+}
+
 export function mergeInterludes<T extends { words: string }>(lines: T[]) {
   return lines.filter(
     (line, i) =>

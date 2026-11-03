@@ -106,19 +106,19 @@
 }
 
 .side {
-  width: 280px;
+  width: 340px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 0 25px 0 35px;
+  padding: 0 25px 0 40px;
 }
 
 .cover {
-  width: 200px;
-  height: 200px;
-  margin-bottom: 14px;
+  width: 270px;
+  height: 270px;
+  margin-bottom: 16px;
 }
 
 .cover img {
@@ -143,9 +143,9 @@
   display: flex;
   align-items: center;
   width: 100%;
-  font-size: 13px;
+  font-size: 15px;
   color: rgba(255, 255, 255, 0.7);
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .progress .bar {
@@ -164,7 +164,7 @@
 
 .trackTitle {
   width: 100%;
-  font-size: 22px;
+  font-size: 26px;
   margin-bottom: 2px;
   font-weight: 700;
   text-align: center;
@@ -172,7 +172,7 @@
 
 .trackArtist {
   width: 100%;
-  font-size: 16px;
+  font-size: 19px;
   text-align: center;
   color: rgba(255, 255, 255, 0.7);
 }
@@ -191,8 +191,14 @@
   flex: 1;
   height: 100%;
   overflow-y: auto;
-  padding: 0 90px 0 15px;
+  padding: 0 60px 0 10px;
   scroll-behavior: smooth;
+  -webkit-mask-image: linear-gradient(
+    transparent,
+    #000 18%,
+    #000 82%,
+    transparent
+  );
 }
 
 .spacer {
@@ -200,11 +206,11 @@
 }
 
 .line {
-  padding: 7px 0;
-  font-size: 26px;
+  padding: 11px 0;
+  font-size: 24px;
   font-weight: 700;
-  line-height: 1.25;
-  color: rgba(255, 255, 255, 0.45);
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.55);
   transition: color 300ms ease;
 }
 
@@ -213,7 +219,7 @@
 }
 
 .passed {
-  color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.4);
 }
 
 .dots {

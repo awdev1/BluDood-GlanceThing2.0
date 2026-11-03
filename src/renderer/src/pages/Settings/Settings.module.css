@@ -461,3 +461,17 @@
   border-color: rgba(255, 64, 64, 0.3);
   color: #ff6b6b;
 }
+
+.patches .status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background-color: rgba(0, 150, 255, 0.1);
+  border: 1px solid rgba(0, 150, 255, 0.3);
+  border-radius: 4px;
+  color: #0096ff;
+  font-size: 14px;
+  animation: appear 500ms ease;
+  margin-bottom: 10px;
+}

@@ -39,7 +39,7 @@ declare global {
       getBrightness: () => Promise<number>
       setBrightness: (brightness: number) => Promise<void>
       getPatches: () => Promise<
-        { name: string; description: string; installed: boolean }[]
+        { name: string; description: string; installed: boolean }[] | false
       >
       applyPatch: (patchName: string) => Promise<void>
       validateConfig: (

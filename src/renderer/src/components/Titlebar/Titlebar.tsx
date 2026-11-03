@@ -8,8 +8,7 @@ import styles from './Titlebar.module.css'
 
 const Titlebar: React.FC = () => {
   const navigate = useNavigate()
-  const { setSettingsOpen, setShortcutsEditorOpen } =
-    useContext(ModalContext)
+  const { openModals, setModalOpen } = useContext(ModalContext)
   const { devMode } = useContext(DevModeContext)
 
   const buttons = [
@@ -23,11 +22,13 @@ const Titlebar: React.FC = () => {
       : []),
     {
       icon: 'apps',
-      action: () => setShortcutsEditorOpen(true)
+      action: () =>
+        setModalOpen('shortcuts', !openModals.includes('shortcuts'))
     },
     {
       icon: 'settings',
-      action: () => setSettingsOpen(true)
+      action: () =>
+        setModalOpen('settings', !openModals.includes('settings'))
     },
     {
       icon: 'close',

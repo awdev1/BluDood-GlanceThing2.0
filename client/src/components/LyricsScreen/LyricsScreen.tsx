@@ -2,6 +2,7 @@ import React, { useCallback, useContext, useEffect, useRef, useState } from 'rea
 import { MediaContext } from '@/contexts/MediaContext.tsx'
 import styles from './LyricsScreen.module.css'
 import { useSwipeGesture } from '@/lib/useGestures'
+import { formatTime } from '@/lib/utils'
 
 interface LyricsScreenProps {
     shown: boolean
@@ -9,7 +10,7 @@ interface LyricsScreenProps {
 }
 
 const LyricsScreen: React.FC<LyricsScreenProps> = ({ shown, setShown }) => {
-    const { lyricsData, lyricsLoading, lyricsCurrentLineIndex, playerData } =
+    const { lyricsData, lyricsLoading, lyricsCurrentLineIndex, playerData, image } =
         useContext(MediaContext)
 
     const [error, setError] = useState<string | null>(null)
@@ -18,6 +19,53 @@ const LyricsScreen: React.FC<LyricsScreenProps> = ({ shown, setShown }) => {
     const [closing, setClosing] = useState<boolean>(false)
 
     const containerRef = useRef<HTMLDivElement>(null)
+    const backCanvasRef = useRef<HTMLCanvasElement>(null)
+    const frontCanvasRef = useRef<HTMLCanvasElement>(null)
+
+    useEffect(() => {
+        const canvases = [backCanvasRef.current, frontCanvasRef.current]
+        if (!image) {
+            canvases.forEach(c => c?.getContext('2d')?.clearRect(0, 0, c.width, c.height))
+            return
+        }
+
+        const img = new Image()
+        img.onload = () => {
+            canvases.forEach((canvas, layer) => {
+                if (!canvas) return
+                const size = 64
+                canvas.width = size
+                canvas.height = size
+                const ctx = canvas.getContext('2d')
+                if (!ctx) return
+
+                ctx.clearRect(0, 0, size, size)
+                ctx.filter = 'blur(6px) saturate(1.6)'
+
+                const copies =
+                    layer === 0
+                        ? [
+                            { x: 0.5, y: 0.5, scale: 1.4, angle: 0 },
+                            { x: 0.2, y: 0.8, scale: 0.8, angle: 120 },
+                            { x: 0.8, y: 0.2, scale: 0.7, angle: 240 }
+                        ]
+                        : [
+                            { x: 0.25, y: 0.3, scale: 0.7, angle: 60 },
+                            { x: 0.75, y: 0.75, scale: 0.8, angle: 180 }
+                        ]
+
+                copies.forEach(({ x, y, scale, angle }) => {
+                    const w = size * scale
+                    ctx.save()
+                    ctx.translate(size * x, size * y)
+                    ctx.rotate((angle * Math.PI) / 180)
+                    ctx.drawImage(img, -w / 2, -w / 2, w, w)
+                    ctx.restore()
+                })
+            })
+        }
+        img.src = image
+    }, [image])
     const lyricsContentRef = useRef<HTMLDivElement>(null)
     const activeLineRef = useRef<HTMLDivElement | null>(null)
 
@@ -156,18 +204,44 @@ const LyricsScreen: React.FC<LyricsScreenProps> = ({ shown, setShown }) => {
             aria-hidden={!shown && !closing}
             {...bind()}
         >
-            <button onClick={close} className={styles.closeBtn} aria-label="Close lyrics">
+            <button onClick={close} className={styles.close} aria-label="Close lyrics">
                 <span className="material-icons">keyboard_arrow_down</span>
             </button>
 
+            <div className={styles.background}>
+                <canvas ref={backCanvasRef} className={styles.back} />
+                <canvas ref={frontCanvasRef} className={styles.front} />
+            </div>
+
             <div className={styles.content}>
                 {playerData?.track && (
-                    <header className={styles.header}>
-                        <h1 className={styles.trackTitle}>{playerData.track.name}</h1>
+                    <div className={styles.side}>
+                        <div className={styles.cover}>
+                            {image ? (
+                                <img src={image} alt="" />
+                            ) : (
+                                <span className="material-icons">music_note</span>
+                            )}
+                        </div>
+                        <div className={styles.progress}>
+                            <span>{formatTime(playerData.track.duration.current)}</span>
+                            <div className={styles.bar}>
+                                <div
+                                    style={{
+                                        width: `${(playerData.track.duration.current /
+                                            playerData.track.duration.total) *
+                                            100
+                                            }%`
+                                    }}
+                                />
+                            </div>
+                            <span>{formatTime(playerData.track.duration.total)}</span>
+                        </div>
+                        <p className={styles.trackTitle}>{playerData.track.name}</p>
                         <p className={styles.trackArtist}>
                             {playerData.track.artists?.join(', ') ?? ''}
                         </p>
-                    </header>
+                    </div>
                 )}
 
                 {error ? (
@@ -177,14 +251,11 @@ const LyricsScreen: React.FC<LyricsScreenProps> = ({ shown, setShown }) => {
                 ) : !hasLyrics ? (
                     <div className={styles.message}>No lyrics available.</div>
                 ) : (
-                    <div className={styles.lyricsContainer}>
-                        <div className={styles.lyricsContent} ref={lyricsContentRef}>
-                            <div
-                                className={styles.paddingTop}
-                                style={{ display: syncLyric ? 'block' : 'none' }}
-                            />
+                    <div className={styles.lyricsContent} ref={lyricsContentRef}>
+                        {syncLyric && <div className={styles.spacer} />}
 
-                            {(lyricsData?.lyrics?.lines ?? []).map((line: { words: string }, i: number) => (
+                        {(lyricsData?.lyrics?.lines ?? []).map((line: { words: string }, i: number) => {
+                            return (
                                 <div
                                     key={i}
                                     className={`${styles.line} ${i === lyricsCurrentLineIndex ? styles.active : ''
@@ -199,13 +270,10 @@ const LyricsScreen: React.FC<LyricsScreenProps> = ({ shown, setShown }) => {
                                         </span>
                                     )}
                                 </div>
-                            ))}
+                            )
+                        })}
 
-                            <div
-                                className={styles.paddingBottom}
-                                style={{ display: syncLyric ? 'block' : 'none' }}
-                            />
-                        </div>
+                        {syncLyric && <div className={styles.spacer} />}
                     </div>
                 )}
             </div>

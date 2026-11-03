@@ -231,3 +231,8 @@
     backdrop-filter: none !important;
   }
 }
+
+.note {
+  font-size: inherit;
+  vertical-align: middle;
+}

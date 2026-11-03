@@ -250,3 +250,8 @@
     font-size: 1.2rem;
   }
 }
+
+.note {
+  font-size: inherit;
+  vertical-align: middle;
+}

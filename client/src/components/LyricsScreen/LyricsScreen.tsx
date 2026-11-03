@@ -198,7 +198,11 @@ const LyricsScreen: React.FC<LyricsScreenProps> = ({ shown, setShown }) => {
                                         if (i === lyricsCurrentLineIndex) activeLineRef.current = el
                                     }}
                                 >
-                                    {line.words}
+                                    {line.words.trim() || (
+                                        <span className={`material-icons ${styles.note}`}>
+                                            music_note
+                                        </span>
+                                    )}
                                 </div>
                             ))}
 

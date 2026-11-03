@@ -157,7 +157,13 @@ const Lyrics: React.FC<LyricsProps> = ({ visible, sectionActive }) => {
             } ${index < lyricsCurrentLineIndex ? styles.passedLine : ''}`}
             ref={index === lyricsCurrentLineIndex ? activeLineRef : null}
           >
-            <div className={styles.lineContent}>{line.words}</div>
+            <div className={styles.lineContent}>
+              {line.words.trim() || (
+                <span className={`material-icons ${styles.note}`}>
+                  music_note
+                </span>
+              )}
+            </div>
           </div>
         ))}
         <div

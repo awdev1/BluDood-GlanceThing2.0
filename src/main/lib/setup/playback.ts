@@ -1,12 +1,14 @@
 import { playbackManager } from '../playback/playback.js'
 import { getStorageValue } from '../storage.js'
 import { serverManager } from '../server.js'
-import { log } from '../utils.js'
+import { checkInternet, log } from '../utils.js'
 
 import { AuthenticatedWebSocket } from '../../types/WebSocketServer.js'
 import { SetupFunction } from '../../types/WebSocketSetup.js'
 
 export const name = 'playback'
+
+let retryTimeout: NodeJS.Timeout | null = null
 
 export const setup: SetupFunction = async () => {
   playbackManager.on('playback', data => {
@@ -22,11 +24,37 @@ export const setup: SetupFunction = async () => {
   })
 
   playbackManager.on('close', async () => {
-    log('Closed, attempting to reopen in 5 seconds...', 'PlaybackManager')
     await playbackManager.cleanup()
+    if (retryTimeout) return
 
-    setTimeout(async () => {
-      await playbackManager.setup(playbackHandler)
+    const handler = getStorageValue('playbackHandler')
+
+    if (playbackManager.requiresInternet(handler)) {
+      const hasInternet = await checkInternet()
+      if (retryTimeout) return
+      if (!hasInternet) {
+        log(
+          'Closed, will retry when connection is restored...',
+          'PlaybackManager'
+        )
+
+        retryTimeout = setInterval(async () => {
+          if (!(await checkInternet())) return
+          if (retryTimeout) {
+            clearInterval(retryTimeout)
+            retryTimeout = null
+          }
+          await playbackManager.setup(getStorageValue('playbackHandler'))
+        }, 5000)
+        return
+      }
+    }
+
+    log('Closed, attempting to reopen in 5 seconds...', 'PlaybackManager')
+
+    retryTimeout = setTimeout(async () => {
+      retryTimeout = null
+      await playbackManager.setup(getStorageValue('playbackHandler'))
     }, 5000)
   })
 
@@ -47,6 +75,11 @@ export const setup: SetupFunction = async () => {
   }
 
   return async () => {
+    if (retryTimeout) {
+      clearInterval(retryTimeout)
+      retryTimeout = null
+    }
     await playbackManager.cleanup()
+    playbackManager.removeAllListeners()
   }
 }

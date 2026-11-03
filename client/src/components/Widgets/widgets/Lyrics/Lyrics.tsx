@@ -35,14 +35,12 @@ const Lyrics: React.FC<LyricsProps> = ({ visible, sectionActive }) => {
   const tapCount = useRef(0)
   const tapTimer = useRef<NodeJS.Timeout | null>(null)
 
-  const [originalPrimary, setOriginalPrimary] = useState<string | null>(null)
   const [originalBgColor, setOriginalBgColor] = useState<string | null>(null)
   const [originalInactiveColor, setOriginalInactiveColor] = useState<string | null>(null)
   const [originalTextColor, setOriginalTextColor] = useState<string | null>(null)
 
   useEffect(() => {
     const style = getComputedStyle(document.documentElement)
-    setOriginalPrimary(style.getPropertyValue('--color-primary'))
     setOriginalBgColor(style.getPropertyValue('--lyrics-color-background'))
     setOriginalInactiveColor(style.getPropertyValue('--lyrics-color-inactive'))
     setOriginalTextColor(style.getPropertyValue('--lyrics-color-messaging'))
@@ -64,14 +62,13 @@ const Lyrics: React.FC<LyricsProps> = ({ visible, sectionActive }) => {
 
   const setColors = useCallback(
     (bg?: string, txt?: string, inactive?: string) => {
-      document.documentElement.style.setProperty('--color-primary', bg ?? originalPrimary ?? '')
       document.documentElement.style.setProperty('--lyrics-color-background', bg ?? originalBgColor ?? '')
       document.documentElement.style.setProperty('--lyrics-color-active', txt ?? originalTextColor ?? '')
       document.documentElement.style.setProperty('--lyrics-color-inactive', inactive ?? originalInactiveColor ?? '')
       document.documentElement.style.setProperty('--lyrics-color-passed', txt ?? originalTextColor ?? '')
       document.documentElement.style.setProperty('--lyrics-color-messaging', inactive ?? originalTextColor ?? '')
     },
-    [originalPrimary, originalBgColor, originalInactiveColor, originalTextColor]
+    [originalBgColor, originalInactiveColor, originalTextColor]
   )
 
   useEffect(() => {

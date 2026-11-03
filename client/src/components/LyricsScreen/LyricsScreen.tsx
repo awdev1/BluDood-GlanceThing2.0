@@ -21,7 +21,6 @@ const LyricsScreen: React.FC<LyricsScreenProps> = ({ shown, setShown }) => {
     const lyricsContentRef = useRef<HTMLDivElement>(null)
     const activeLineRef = useRef<HTMLDivElement | null>(null)
 
-    const [originalPrimary, setOriginalPrimary] = useState<string | null>(null)
     const [originalBg, setOriginalBg] = useState<string | null>(null)
     const [originalInactive, setOriginalInactive] = useState<string | null>(null)
     const [originalText, setOriginalText] = useState<string | null>(null)
@@ -30,12 +29,10 @@ const LyricsScreen: React.FC<LyricsScreenProps> = ({ shown, setShown }) => {
     useEffect(() => {
         if (!hasInitializedColors.current) {
             const root = getComputedStyle(document.documentElement)
-            const primary = root.getPropertyValue('--color-primary').trim()
             const bg = root.getPropertyValue('--lyrics-color-background').trim()
             const inactive = root.getPropertyValue('--lyrics-color-inactive').trim()
             const text = root.getPropertyValue('--lyrics-color-messaging').trim()
             
-            if (primary) setOriginalPrimary(primary)
             if (bg) setOriginalBg(bg)
             if (inactive) setOriginalInactive(inactive)
             if (text) setOriginalText(text)
@@ -66,14 +63,12 @@ const LyricsScreen: React.FC<LyricsScreenProps> = ({ shown, setShown }) => {
     const setColors = useCallback(
         (bg?: string, txt?: string, inactive?: string) => {
             if (bg === undefined && txt === undefined && inactive === undefined) {
-                if (originalPrimary) document.documentElement.style.setProperty('--color-primary', originalPrimary)
                 if (originalBg) document.documentElement.style.setProperty('--lyrics-color-background', originalBg)
                 if (originalText) document.documentElement.style.setProperty('--lyrics-color-active', originalText)
                 if (originalInactive) document.documentElement.style.setProperty('--lyrics-color-inactive', originalInactive)
                 if (originalText) document.documentElement.style.setProperty('--lyrics-color-passed', originalText)
                 if (originalInactive) document.documentElement.style.setProperty('--lyrics-color-messaging', originalInactive)
             } else {
-                document.documentElement.style.setProperty('--color-primary', bg ?? originalPrimary ?? '')
                 document.documentElement.style.setProperty('--lyrics-color-background', bg ?? originalBg ?? '')
                 document.documentElement.style.setProperty('--lyrics-color-active', txt ?? originalText ?? '')
                 document.documentElement.style.setProperty('--lyrics-color-inactive', inactive ?? originalInactive ?? '')
@@ -81,7 +76,7 @@ const LyricsScreen: React.FC<LyricsScreenProps> = ({ shown, setShown }) => {
                 document.documentElement.style.setProperty('--lyrics-color-messaging', inactive ?? originalText ?? '')
             }
         },
-        [originalPrimary, originalBg, originalInactive, originalText]
+        [originalBg, originalInactive, originalText]
     )
 
     useEffect(() => {

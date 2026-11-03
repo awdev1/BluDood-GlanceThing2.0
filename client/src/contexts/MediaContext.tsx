@@ -18,6 +18,7 @@ import {
   SpotifyLyricsData
 } from '@/types/Playback.js'
 import { AppStateContext } from './AppStateContext.tsx'
+import { getAverageColor } from '@/lib/utils.ts'
 
 interface MediaContextProps {
   image: string | null
@@ -148,6 +149,38 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
   const [likedSongsImage, setLikedSongsImage] = useState<string>('')
 
   const [lyricsScreenShown, setLyricsScreenShown] = useState<boolean>(false)
+
+  useEffect(() => {
+    const style = document.documentElement.style
+    const lyricsColor = lyricsData?.lyrics?.lines?.length
+      ? lyricsData.colors?.background
+      : null
+
+    if (lyricsColor) {
+      const { r = 0, g = 0, b = 0 } = lyricsColor
+      style.setProperty('--color-primary', `rgb(${r},${g},${b})`)
+      return
+    }
+
+    if (!image) {
+      style.removeProperty('--color-primary')
+      return
+    }
+
+    let cancelled = false
+    getAverageColor(image).then(color => {
+      if (cancelled) return
+      if (!color) return style.removeProperty('--color-primary')
+      style.setProperty(
+        '--color-primary',
+        `rgb(${color.r},${color.g},${color.b})`
+      )
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [image, lyricsData])
 
   useEffect(() => {
     if (

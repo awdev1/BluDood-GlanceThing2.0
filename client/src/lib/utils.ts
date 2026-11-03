@@ -59,3 +59,51 @@ export const debounce = <
 
   return debouncedFn
 }
+
+export function getAverageColor(
+  src: string
+): Promise<{ r: number; g: number; b: number } | null> {
+  return new Promise(resolve => {
+    const img = new Image()
+
+    img.onload = () => {
+      const size = 16
+      const canvas = document.createElement('canvas')
+      canvas.width = size
+      canvas.height = size
+
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return resolve(null)
+
+      ctx.drawImage(img, 0, 0, size, size)
+      const { data } = ctx.getImageData(0, 0, size, size)
+
+      let r = 0
+      let g = 0
+      let b = 0
+      const pixels = data.length / 4
+
+      for (let i = 0; i < data.length; i += 4) {
+        r += data[i]
+        g += data[i + 1]
+        b += data[i + 2]
+      }
+
+      r /= pixels
+      g /= pixels
+      b /= pixels
+
+      const brightest = Math.max(r, g, b)
+      const scale = brightest > 0 && brightest < 140 ? 140 / brightest : 1
+
+      resolve({
+        r: Math.min(255, Math.round(r * scale)),
+        g: Math.min(255, Math.round(g * scale)),
+        b: Math.min(255, Math.round(b * scale))
+      })
+    }
+
+    img.onerror = () => resolve(null)
+    img.src = src
+  })
+}

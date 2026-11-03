@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   build-windows:
-    runs-on: windows-latest
+    runs-on: blacksmith-4vcpu-windows-2025
 
     steps:
       - name: Checkout the repository
@@ -42,7 +42,7 @@ jobs:
           path: ./dist/glancething-nightly-*-setup.exe
 
   build-macos:
-    runs-on: macos-latest
+    runs-on: blacksmith-6vcpu-macos-latest
 
     steps:
       - name: Checkout the repository
@@ -69,7 +69,7 @@ jobs:
           path: ./dist/glancething-nightly-*.dmg
 
   build-linux:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
 
     steps:
       - name: Checkout the repository
@@ -97,7 +97,7 @@ jobs:
 
 
   build-client:
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     defaults:
       run:
         working-directory: ./client

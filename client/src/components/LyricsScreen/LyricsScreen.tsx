@@ -103,6 +103,10 @@ const LyricsScreen: React.FC<LyricsScreenProps> = ({ shown, setShown }) => {
         }
     }, [])
 
+    useEffect(() => {
+        lyricsContentRef.current?.scrollTo({ top: 0 })
+    }, [lyricsData])
+
     const scrollToActiveLine = useCallback(() => {
         if (!lyricsContentRef.current || !activeLineRef.current) return
         const container = lyricsContentRef.current

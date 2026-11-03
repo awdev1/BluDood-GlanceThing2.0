@@ -47,6 +47,10 @@ const Lyrics: React.FC<LyricsProps> = ({ visible, sectionActive }) => {
     setOriginalTextColor(style.getPropertyValue('--lyrics-color-messaging'))
   }, [])
 
+  useEffect(() => {
+    lyricsContentRef.current?.scrollTo({ top: 0 })
+  }, [lyricsData])
+
   const scrollToActiveLine = useCallback(() => {
     if (!visible || !activeLineRef.current || !lyricsContentRef.current) return
     const container = lyricsContentRef.current

@@ -1,0 +1,13 @@
+.marquee {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.marquee span {
+  display: inline-block;
+  will-change: transform;
+}
+
+.marquee[data-overflowing='false'] {
+  text-overflow: ellipsis;
+}

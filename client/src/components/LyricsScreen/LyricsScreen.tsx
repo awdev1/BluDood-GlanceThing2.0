@@ -3,6 +3,7 @@ import { MediaContext } from '@/contexts/MediaContext.tsx'
 import styles from './LyricsScreen.module.css'
 import { useSwipeGesture } from '@/lib/useGestures'
 import { formatTime, isInterlude } from '@/lib/utils'
+import Marquee from '@/components/Marquee/Marquee'
 
 interface LyricsScreenProps {
     shown: boolean
@@ -250,10 +251,12 @@ const LyricsScreen: React.FC<LyricsScreenProps> = ({ shown, setShown }) => {
                             </div>
                             <span>{formatTime(playerData.track.duration.total)}</span>
                         </div>
-                        <p className={styles.trackTitle}>{playerData.track.name}</p>
-                        <p className={styles.trackArtist}>
+                        <Marquee className={styles.trackTitle}>
+                            {playerData.track.name}
+                        </Marquee>
+                        <Marquee className={styles.trackArtist}>
                             {playerData.track.artists?.join(', ') ?? ''}
-                        </p>
+                        </Marquee>
                     </div>
                 )}
 

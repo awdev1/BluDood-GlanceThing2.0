@@ -18,7 +18,7 @@ import {
   SpotifyLyricsData
 } from '@/types/Playback.js'
 import { AppStateContext } from './AppStateContext.tsx'
-import { getAverageColor, mergeInterludes } from '@/lib/utils.ts'
+import { getAverageColor, normalizeLyricLines } from '@/lib/utils.ts'
 
 interface MediaContextProps {
   image: string | null
@@ -269,7 +269,10 @@ const currentTime = (playerData.track?.duration.current ?? 0) + 1500
                   ...data,
                   lyrics: {
                     ...data.lyrics,
-                    lines: mergeInterludes(data.lyrics.lines)
+                    lines: normalizeLyricLines(
+                      data.lyrics.lines,
+                      data.lyrics.syncType === 'LINE_SYNCED'
+                    )
                   }
                 }
               : data

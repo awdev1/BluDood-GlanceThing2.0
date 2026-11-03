@@ -37,11 +37,29 @@ export function getInterludeProgress(
   return Math.min(Math.max((now - start) / Math.max(end - start, 1), 0), 1)
 }
 
-export function mergeInterludes<T extends { words: string }>(lines: T[]) {
-  return lines.filter(
+const INTRO_THRESHOLD = 2000
+
+export function normalizeLyricLines<
+  T extends { words: string; startTimeMs: string; endTimeMs: string }
+>(lines: T[], synced: boolean) {
+  const merged = lines.filter(
     (line, i) =>
       i === 0 || !isInterlude(line.words) || !isInterlude(lines[i - 1].words)
   )
+
+  const first = merged[0]
+  if (
+    !synced ||
+    !first ||
+    isInterlude(first.words) ||
+    parseInt(first.startTimeMs) < INTRO_THRESHOLD
+  )
+    return merged
+
+  return [
+    { ...first, startTimeMs: '0', endTimeMs: first.startTimeMs, words: '' },
+    ...merged
+  ]
 }
 
 export function formatTime(ms: number) {

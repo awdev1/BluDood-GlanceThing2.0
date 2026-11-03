@@ -1,0 +1,18 @@
+.handle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50px;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+}
+
+.bar {
+  margin-top: 10px;
+  width: 44px;
+  height: 5px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.4);
+}

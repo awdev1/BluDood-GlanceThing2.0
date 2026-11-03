@@ -10,6 +10,7 @@ import React, {
 import { MediaContext } from '@/contexts/MediaContext.tsx'
 import { AppStateContext } from '@/contexts/AppStateContext.tsx'
 import { useSwipeGesture, useTapGesture } from '@/lib/useGestures'
+import SwipeHandle from '@/components/SwipeHandle/SwipeHandle'
 
 import styles from './FullescreenPlayer.module.css'
 
@@ -146,15 +147,7 @@ const FullescreenPlayer: React.FC<FullescreenPlayerProps> = ({
       {...swipeBind()}
       tabIndex={-1}
     >
-      <button
-        onClick={e => {
-          setShown(false)
-          e.currentTarget.blur()
-        }}
-        className={styles.close}
-      >
-        <span className="material-icons">keyboard_arrow_down</span>
-      </button>
+      <SwipeHandle onClose={() => setShown(false)} enabled={shown} />
 
 
       {swipeFeedback && (

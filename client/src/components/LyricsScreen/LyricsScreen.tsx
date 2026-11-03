@@ -1,10 +1,10 @@
 import React, { useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { MediaContext } from '@/contexts/MediaContext.tsx'
 import styles from './LyricsScreen.module.css'
-import { useSwipeGesture } from '@/lib/useGestures'
 import { formatTime, getInterludeProgress, isInterlude } from '@/lib/utils'
 import Marquee from '@/components/Marquee/Marquee'
 import CoverBackground from '@/components/CoverBackground/CoverBackground'
+import SwipeHandle from '@/components/SwipeHandle/SwipeHandle'
 import InterludeDots from '@/components/InterludeDots/InterludeDots'
 import LyricText from '@/components/LyricText/LyricText'
 
@@ -156,15 +156,6 @@ const LyricsScreen: React.FC<LyricsScreenProps> = ({ shown, setShown }) => {
         setShown(false)
     }, [setShown])
 
-    const bind = useSwipeGesture({
-        onSwipeDown: () => {
-            close()
-        }
-    }, {
-        threshold: 60,
-        velocity: 0.4,
-        enabled: shown
-    })
 
     function scrollManually(direction: number) {
         manualScrollUntil.current = Date.now() + 4000
@@ -203,12 +194,7 @@ const LyricsScreen: React.FC<LyricsScreenProps> = ({ shown, setShown }) => {
             onWheel={onWheel}
             onKeyDown={onKeyDown}
         >
-            <div className={styles.swipeArea} {...bind()}>
-                <div className={styles.grabber} />
-            </div>
-            <button onClick={close} className={styles.close} aria-label="Close lyrics">
-                <span className="material-icons">keyboard_arrow_down</span>
-            </button>
+            <SwipeHandle onClose={close} enabled={shown} />
 
             <CoverBackground image={image} running={shown} />
 

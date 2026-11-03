@@ -29,7 +29,7 @@ const Developer: React.FC = () => {
 
   useEffect(() => {
     const interval = setInterval(async () => {
-      setServerStarted(await window.api.isServerStarted())
+      setServerStarted((await window.api.getServerInfo()).running)
     }, 1000)
 
     const removeListener = window.api.on('carThingState', s => {

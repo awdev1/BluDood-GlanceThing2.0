@@ -20,7 +20,10 @@ declare global {
       installApp: () => Promise<string | true>
       startServer: () => Promise<void>
       stopServer: () => Promise<void>
-      isServerStarted: () => Promise<boolean>
+      getServerInfo: () => Promise<{
+        running: boolean
+        port: number | null
+      }>
       forwardSocketServer: () => Promise<void>
       getVersion: () => Promise<string>
       getStorageValue: (key: string) => Promise<unknown>
@@ -67,6 +70,8 @@ declare global {
       updateWeather: () => Promise<boolean>
       openExternal: (url: string) => Promise<void>
       getUpdateAvailable: () => Promise<{ version: string; url: string } | null>
+      findOpenPort: () => Promise<number>
+      isPortOpen: (port: number) => Promise<boolean>
     }
   }
 }

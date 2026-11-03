@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { AuthenticatedWebSocket } from '../types/WebSocketServer.js'
-import { wss } from './server.js'
+import { serverManager } from './server.js'
 import { getStorageValue } from './storage.js'
 import { log, LogLevel } from './utils.js'
 
@@ -109,6 +109,7 @@ export async function fetchWeather(
 }
 
 export async function updateWeather(): Promise<boolean> {
+  const wss = serverManager.getServer()
   if (!wss) return false
 
   try {

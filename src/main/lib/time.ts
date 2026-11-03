@@ -1,6 +1,6 @@
 import moment from 'moment'
 import { AuthenticatedWebSocket } from '../types/WebSocketServer.js'
-import { wss } from './server.js'
+import { serverManager } from './server.js'
 import { getStorageValue } from './storage.js'
 
 export function formatDate(d = new Date()) {
@@ -19,6 +19,7 @@ export function formatDate(d = new Date()) {
 }
 
 export async function updateTime(): Promise<void> {
+  const wss = serverManager.getServer()
   if (!wss) return
 
   wss.clients.forEach(async (ws: AuthenticatedWebSocket) => {

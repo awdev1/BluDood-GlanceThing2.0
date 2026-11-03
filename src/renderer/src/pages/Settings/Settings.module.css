@@ -441,3 +441,23 @@
   flex: 1;
   width: 100%;
 }
+
+.customPort .status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 8px 12px;
+  background-color: rgba(30, 215, 96, 0.1);
+  border: 1px solid rgba(30, 215, 96, 0.3);
+  border-radius: 4px;
+  color: #1ed760;
+  font-size: 14px;
+  animation: appear 500ms ease;
+}
+
+.customPort .status[data-type='error'] {
+  background-color: rgba(255, 0, 0, 0.1);
+  border-color: rgba(255, 64, 64, 0.3);
+  color: #ff6b6b;
+}

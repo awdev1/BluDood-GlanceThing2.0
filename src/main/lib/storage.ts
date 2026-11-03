@@ -2,8 +2,18 @@ import { app, safeStorage } from 'electron'
 import path from 'path'
 import fs from 'fs'
 
-import { log, LogLevel, random, safeParse, setLogLevel } from './utils.js'
+import {
+  findOpenPort,
+  isDev,
+  isPortOpen,
+  log,
+  LogLevel,
+  random,
+  safeParse,
+  setLogLevel
+} from './utils.js'
 import { setAutoBrightness, setBrightnessSmooth } from './adb.js'
+import { serverManager } from './server.js'
 import { updateTime } from './time.js'
 import { notifyClientsOfSettingChanges } from './setting.js'
 
@@ -50,7 +60,14 @@ const storageValueHandlers: Record<string, (value: unknown) => void> = {
   showHighLowTempStatusBar: notifyClientsOfSettingChanges,
   showWeatherDescriptionStatusBar: notifyClientsOfSettingChanges,
   showWeatherIconStatusBar: notifyClientsOfSettingChanges,
-  showHumidityStatusBar: notifyClientsOfSettingChanges
+  showHumidityStatusBar: notifyClientsOfSettingChanges,
+  port: async p => {
+    const newPort = p as number | null
+    const info = serverManager.getServerInfo()
+    if (info.running && info.port !== newPort) {
+      await serverManager.restart()
+    }
+  }
 }
 
 function getStoragePath() {
@@ -163,4 +180,30 @@ export function setPlaybackHandlerConfig(
     Buffer.from(JSON.stringify(config)).toString('base64'),
     true
   )
+}
+
+export async function getServerPort() {
+  const savedPort = getStorageValue('port')
+
+  if (savedPort) {
+    if (await isPortOpen(savedPort)) return savedPort as number
+
+    log(
+      `Port ${savedPort} is not open, finding a new one`,
+      'Server',
+      LogLevel.WARN
+    )
+    setStorageValue('port', null)
+  }
+
+  if (isDev()) {
+    const devPort = 8000
+    if (await isPortOpen(devPort)) return devPort
+    log(
+      `Port ${devPort} unavailable in dev mode, using random port`,
+      'Server'
+    )
+  }
+
+  return await findOpenPort()
 }

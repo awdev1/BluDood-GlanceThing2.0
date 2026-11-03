@@ -12,7 +12,7 @@ enum IPCHandler {
   InstallApp = 'installApp',
   StartServer = 'startServer',
   StopServer = 'stopServer',
-  IsServerStarted = 'isServerStarted',
+  GetServerInfo = 'getServerInfo',
   ForwardSocketServer = 'forwardSocketServer',
   GetVersion = 'getVersion',
   GetStorageValue = 'getStorageValue',
@@ -42,7 +42,9 @@ enum IPCHandler {
   UploadScreensaverImage = 'uploadScreensaverImage',
   RemoveScreensaverImage = 'removeScreensaverImage',
   HasCustomScreensaverImage = 'hasCustomScreensaverImage',
-  UpdateWeather = 'updateWeather'
+  UpdateWeather = 'updateWeather',
+  FindOpenPort = 'findOpenPort',
+  IsPortOpen = 'isPortOpen'
 }
 
 // Custom APIs for renderer
@@ -60,7 +62,7 @@ const api = {
   installApp: () => ipcRenderer.invoke(IPCHandler.InstallApp),
   startServer: () => ipcRenderer.invoke(IPCHandler.StartServer),
   stopServer: () => ipcRenderer.invoke(IPCHandler.StopServer),
-  isServerStarted: () => ipcRenderer.invoke(IPCHandler.IsServerStarted),
+  getServerInfo: () => ipcRenderer.invoke(IPCHandler.GetServerInfo),
   forwardSocketServer: () =>
     ipcRenderer.invoke(IPCHandler.ForwardSocketServer),
   getVersion: () => ipcRenderer.invoke(IPCHandler.GetVersion),
@@ -118,7 +120,10 @@ const api = {
   getChannel: () => ipcRenderer.invoke('getChannel'),
   updateWeather: () => ipcRenderer.invoke(IPCHandler.UpdateWeather),
   openExternal: (url: string) => ipcRenderer.invoke('openExternal', url),
-  getUpdateAvailable: () => ipcRenderer.invoke('getUpdateAvailable')
+  getUpdateAvailable: () => ipcRenderer.invoke('getUpdateAvailable'),
+  findOpenPort: () => ipcRenderer.invoke(IPCHandler.FindOpenPort),
+  isPortOpen: (port: number) =>
+    ipcRenderer.invoke(IPCHandler.IsPortOpen, port)
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

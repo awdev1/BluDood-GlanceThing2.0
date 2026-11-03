@@ -21,13 +21,13 @@ Assume good intentions and focus discussions on improving the project.
 
    ```bash
    # in the root of the repository
-   npm run build
-   npm run lint
-   npm run format
+   bun run build
+   bun run lint
+   bun run format
 
    # in /client
-   npm run build
-   npm run lint
+   bun run build
+   bun run lint
    ```
 
    Installing Prettier and ESLint in your IDE can help automate this!

@@ -8,6 +8,7 @@ import React, {
 } from 'react'
 import { MediaContext } from '@/contexts/MediaContext.tsx'
 import BaseWidget from '../BaseWidget/BaseWidget'
+import { isInterlude } from '@/lib/utils'
 
 import styles from './Lyrics.module.css'
 
@@ -155,10 +156,12 @@ const Lyrics: React.FC<LyricsProps> = ({ visible, sectionActive }) => {
             ref={index === lyricsCurrentLineIndex ? activeLineRef : null}
           >
             <div className={styles.lineContent}>
-              {line.words.trim() || (
+              {isInterlude(line.words) ? (
                 <span className={`material-icons ${styles.note}`}>
                   music_note
                 </span>
+              ) : (
+                line.words
               )}
             </div>
           </div>

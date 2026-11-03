@@ -62,7 +62,7 @@ function parseLrcLyrics(lrc: string): {
     lines.push({
       startTimeMs: startTimeMs.toString(),
       endTimeMs: '0',
-      words: text.trim(),
+      words: text.replace(/[♩♪♫♬]/g, '').trim(),
       syllables: undefined // satisfy type
     })
   }

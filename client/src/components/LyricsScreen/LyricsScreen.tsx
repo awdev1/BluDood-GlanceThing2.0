@@ -2,7 +2,7 @@ import React, { useCallback, useContext, useEffect, useRef, useState } from 'rea
 import { MediaContext } from '@/contexts/MediaContext.tsx'
 import styles from './LyricsScreen.module.css'
 import { useSwipeGesture } from '@/lib/useGestures'
-import { formatTime } from '@/lib/utils'
+import { formatTime, isInterlude } from '@/lib/utils'
 
 interface LyricsScreenProps {
     shown: boolean
@@ -17,6 +17,19 @@ const LyricsScreen: React.FC<LyricsScreenProps> = ({ shown, setShown }) => {
     const [hasLyrics, setHasLyrics] = useState<boolean>(false)
     const [syncLyric, setSyncLyric] = useState<boolean>(false)
     const [closing, setClosing] = useState<boolean>(false)
+
+    const interludeProgress = (() => {
+        const lines = lyricsData?.lyrics?.lines ?? []
+        const line = lines[lyricsCurrentLineIndex]
+        if (!line || !isInterlude(line.words)) return 0
+
+        const start = parseInt(line.startTimeMs)
+        const next = lines[lyricsCurrentLineIndex + 1]
+        const end = next ? parseInt(next.startTimeMs) : start + 3000
+        const now = (playerData?.track?.duration.current ?? start) + 1500
+
+        return Math.min(Math.max((now - start) / Math.max(end - start, 1), 0), 1)
+    })()
 
     const containerRef = useRef<HTMLDivElement>(null)
     const backCanvasRef = useRef<HTMLCanvasElement>(null)
@@ -264,10 +277,35 @@ const LyricsScreen: React.FC<LyricsScreenProps> = ({ shown, setShown }) => {
                                         if (i === lyricsCurrentLineIndex) activeLineRef.current = el
                                     }}
                                 >
-                                    {line.words.trim() || (
-                                        <span className={`material-icons ${styles.note}`}>
-                                            music_note
-                                        </span>
+                                    {isInterlude(line.words) ? (
+                                        <div
+                                            className={styles.dots}
+                                            data-playing={
+                                                i === lyricsCurrentLineIndex &&
+                                                !!playerData?.isPlaying
+                                            }
+                                        >
+                                            {[0, 1, 2].map(d => (
+                                                <span
+                                                    key={d}
+                                                    style={
+                                                        i === lyricsCurrentLineIndex
+                                                            ? {
+                                                                opacity:
+                                                                    0.3 +
+                                                                    0.7 *
+                                                                    Math.min(
+                                                                        Math.max(interludeProgress * 3 - d, 0),
+                                                                        1
+                                                                    )
+                                                            }
+                                                            : undefined
+                                                    }
+                                                />
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        line.words
                                     )}
                                 </div>
                             )

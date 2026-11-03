@@ -17,6 +17,10 @@ export async function getSocketPassword() {
   return res.data.replace('\n', '')
 }
 
+export function isInterlude(words: string) {
+  return !words.replace(/[♩♪♫♬]/g, '').trim()
+}
+
 export function formatTime(ms: number) {
   const seconds = Math.floor(ms / 1000)
   const minutes = Math.floor(seconds / 60)

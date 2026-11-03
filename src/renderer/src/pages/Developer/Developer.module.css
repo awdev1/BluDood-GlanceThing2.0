@@ -1,99 +1,110 @@
-.container {
-  max-width: 700px;
-  margin: 40px auto;
-  padding: 0 20px;
-  font-family: sans-serif;
-  color: white;
-  animation: fadeInUp 500ms ease forwards;
-}
+.developer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 
-h1 {
-  font-size: 2rem;
-  margin-bottom: 10px;
-  color: white;
-  animation: fadeIn 700ms ease forwards;
-}
-
-h2 {
-  font-size: 1.2rem;
-  margin-bottom: 8px;
-  color: white;
-  animation: fadeIn 700ms ease forwards;
-}
-
-.backLink {
-  display: inline-block;
-  margin-bottom: 24px;
-  text-decoration: none;
-  color: #007bff;
-  transition: color 0.2s ease;
-}
-
-.backLink:hover {
-  color: #0056b3;
-}
-
-section {
-  margin-bottom: 32px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #eee;
-  animation: fadeIn 800ms ease forwards;
-}
-
-.group {
   display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 10px;
+  align-items: center;
+  justify-content: center;
+
+  opacity: 0;
+  pointer-events: none;
+  transition: 200ms ease;
 }
 
-button {
-  padding: 8px 16px;
-  background: #007bff;
-  border: none;
-  border-radius: 4px;
-  color: white;
-  font-size: 0.95rem;
-  cursor: pointer;
-  transition: background 0.2s ease, transform 0.2s ease;
-  animation: fadeInUp 700ms ease forwards;
+.developer[data-open='true'] {
+  opacity: 1;
+  backdrop-filter: blur(5px);
+  pointer-events: all;
 }
 
-
-button.danger {
-  background: #dc3545;
-}
-
-button.danger:hover {
-  background: #a71d2a;
+.box {
+  width: 600px;
+  height: 400px;
+  padding: 15px;
+  background: #111;
+  border-radius: 5px;
+  transition: transform 200ms ease;
   transform: scale(1.05);
+
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  overflow-y: auto;
 }
 
-.success {
-  color: #28a745;
-  font-size: 0.9rem;
-  margin-left: 10px;
-  animation: fadeIn 900ms ease forwards;
+.developer[data-open='true'] .box {
+  transform: scale(1);
 }
 
-/* Keyframes */
+.box > h2 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 5px;
+}
 
-@keyframes fadeInUp {
+.box h2 button {
+  all: unset;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition: 200ms ease;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 5px;
+}
+
+.section .status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section .actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.section .actions button,
+.bottomActions button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+}
+
+.section .success {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #1ed760;
+  animation: appear 500ms ease;
+}
+
+.bottomActions {
+  margin-top: auto;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 0 5px;
+}
+
+@keyframes appear {
   from {
     opacity: 0;
-    transform: translateY(15px);
+    transform: translateX(10px);
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
   to {
     opacity: 1;
+    transform: translateX(0);
   }
 }

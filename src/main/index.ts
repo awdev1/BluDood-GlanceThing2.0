@@ -51,7 +51,8 @@ import {
   getBrightness,
   setBrightnessSmooth,
   getAutoBrightness,
-  setAutoBrightness
+  setAutoBrightness,
+  restore
 } from './lib/adb.js'
 import {
   getShortcuts,
@@ -305,7 +306,8 @@ enum IPCHandler {
   CheckForUpdates = 'checkForUpdates',
   TestNotification = 'testNotification',
   FindOpenPort = 'findOpenPort',
-  IsPortOpen = 'isPortOpen'
+  IsPortOpen = 'isPortOpen',
+  RestoreCarThing = 'restoreCarThing'
 }
 
 async function setupIpcHandlers() {
@@ -561,6 +563,10 @@ async function setupIpcHandlers() {
   })
 
   ipcMain.handle('getUpdateAvailable', () => pendingUpdate)
+
+  ipcMain.handle(IPCHandler.RestoreCarThing, async () => {
+    await restore(null)
+  })
 
   ipcMain.handle(IPCHandler.FindOpenPort, async () => {
     return await findOpenPort()

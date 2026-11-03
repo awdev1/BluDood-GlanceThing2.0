@@ -44,7 +44,8 @@ enum IPCHandler {
   HasCustomScreensaverImage = 'hasCustomScreensaverImage',
   UpdateWeather = 'updateWeather',
   FindOpenPort = 'findOpenPort',
-  IsPortOpen = 'isPortOpen'
+  IsPortOpen = 'isPortOpen',
+  RestoreCarThing = 'restoreCarThing'
 }
 
 // Custom APIs for renderer
@@ -123,7 +124,8 @@ const api = {
   getUpdateAvailable: () => ipcRenderer.invoke('getUpdateAvailable'),
   findOpenPort: () => ipcRenderer.invoke(IPCHandler.FindOpenPort),
   isPortOpen: (port: number) =>
-    ipcRenderer.invoke(IPCHandler.IsPortOpen, port)
+    ipcRenderer.invoke(IPCHandler.IsPortOpen, port),
+  restoreCarThing: () => ipcRenderer.invoke(IPCHandler.RestoreCarThing)
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

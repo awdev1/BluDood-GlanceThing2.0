@@ -72,6 +72,7 @@ declare global {
       getUpdateAvailable: () => Promise<{ version: string; url: string } | null>
       findOpenPort: () => Promise<number>
       isPortOpen: (port: number) => Promise<boolean>
+      restoreCarThing: () => Promise<void>
     }
   }
 }

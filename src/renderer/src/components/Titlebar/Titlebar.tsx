@@ -1,5 +1,4 @@
 import React, { useContext } from 'react'
-import { useNavigate } from 'react-router-dom'
 
 import { DevModeContext } from '@/contexts/DevModeContext.js'
 import { ModalContext } from '@/contexts/ModalContext.js'
@@ -7,7 +6,6 @@ import { ModalContext } from '@/contexts/ModalContext.js'
 import styles from './Titlebar.module.css'
 
 const Titlebar: React.FC = () => {
-  const navigate = useNavigate()
   const { openModals, setModalOpen } = useContext(ModalContext)
   const { devMode } = useContext(DevModeContext)
 
@@ -16,7 +14,8 @@ const Titlebar: React.FC = () => {
       ? [
           {
             icon: 'code',
-            action: () => navigate('/developer')
+            action: () =>
+              setModalOpen('developer', !openModals.includes('developer'))
           }
         ]
       : []),

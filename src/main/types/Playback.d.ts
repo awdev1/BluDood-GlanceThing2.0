@@ -14,6 +14,7 @@ export type Action =
   | 'lyrics'
   | 'playlists'
   | 'devices'
+  | 'seek'
 
 export type PlaybackData = {
   isPlaying: boolean

@@ -129,6 +129,11 @@ class PlaybackManager extends (EventEmitter as new () => TypedEmitter<PlaybackHa
     return this.currentHandler.previous()
   }
 
+  async seek(positionMs: number): Promise<void> {
+    if (!this.currentHandler) return
+    return this.currentHandler.seek(positionMs)
+  }
+
   async shuffle(state: boolean): Promise<void> {
     if (!this.currentHandler) return
     return this.currentHandler.shuffle(state)

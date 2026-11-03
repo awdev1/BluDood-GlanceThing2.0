@@ -12,6 +12,7 @@ export type Action =
   | 'lyrics'
   | 'playlists'
   | 'devices'
+  | 'seek'
 
 export interface PlaybackData {
   isPlaying: boolean

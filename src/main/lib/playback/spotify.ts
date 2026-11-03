@@ -113,7 +113,8 @@ const defaultSupportedActions: Action[] = [
   'pause',
   'next',
   'previous',
-  'image'
+  'image',
+  'seek'
 ]
 
 export function filterData(
@@ -447,6 +448,12 @@ class SpotifyHandler extends BasePlaybackHandler {
 
   async previous(): Promise<void> {
     await this.instance!.post('/me/player/previous')
+  }
+
+  async seek(positionMs: number): Promise<void> {
+    await this.instance!.put('/me/player/seek', null, {
+      params: { position_ms: Math.max(0, Math.round(positionMs)) }
+    })
   }
 
   async shuffle(state: boolean): Promise<void> {

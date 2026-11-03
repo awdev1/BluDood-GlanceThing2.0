@@ -58,6 +58,14 @@ export const actions: HandlerAction[] = [
     }
   },
   {
+    action: 'seek',
+    handle: async (_ws, data) => {
+      const { positionMs } = data as { positionMs: number }
+      log(`Seeking to ${positionMs}ms`, 'Playback')
+      await playbackManager.seek(positionMs)
+    }
+  },
+  {
     action: 'shuffle',
     handle: async (_, data) => {
       await playbackManager.shuffle((data as { state: boolean }).state)

@@ -20,6 +20,7 @@ export abstract class BasePlaybackHandler extends (EventEmitter as new () => Typ
   abstract setVolume(volume: number, deviceId?: string): Promise<void>
   abstract next(): Promise<void>
   abstract previous(): Promise<void>
+  abstract seek(positionMs: number): Promise<void>
   abstract shuffle(state: boolean): Promise<void>
   abstract repeat(stae: RepeatMode): Promise<void>
   abstract getImage(): Promise<Buffer | null>

@@ -152,7 +152,8 @@ export function filterData(data: NowPlayingMessage): PlaybackData | null {
     trackDuration,
     trackProgress,
     canChangeVolume,
-    canSkip
+    canSkip,
+    canFastForward
   } = data
 
   if (!trackName) {
@@ -184,6 +185,7 @@ export function filterData(data: NowPlayingMessage): PlaybackData | null {
 
   if (canChangeVolume) playbackData.supportedActions.push('volume')
   if (canSkip) playbackData.supportedActions.push('next', 'previous')
+  if (canFastForward) playbackData.supportedActions.push('seek')
   if (data.thumbnail) playbackData.supportedActions.push('image')
 
   // Add lyrics support for tracks
@@ -282,6 +284,12 @@ class NativeHandler extends BasePlaybackHandler {
     if (!this.instance) return
 
     await this.instance.previousTrack()
+  }
+
+  async seek(positionMs: number): Promise<void> {
+    if (!this.instance) return
+
+    await this.instance.seekTo(Math.max(0, Math.round(positionMs)))
   }
 
   async shuffle(): Promise<void> {

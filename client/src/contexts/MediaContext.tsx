@@ -55,6 +55,7 @@ interface MediaContextProps {
     playPause: () => void
     skipForward: () => void
     skipBackward: () => void
+    seek: (positionMs: number) => void
     setVolume: (volume: number, deviceId?: string) => void
     shuffle: (state: boolean) => void
     repeat: (state: RepeatMode) => void
@@ -104,6 +105,7 @@ const MediaContext = createContext<MediaContextProps>({
     playPause: () => { },
     skipForward: () => { },
     skipBackward: () => { },
+    seek: () => { },
     setVolume: () => { },
     shuffle: () => { },
     repeat: () => { },
@@ -550,6 +552,21 @@ const currentTime = (playerData.track?.duration.current ?? 0) + 1500
       if (playerDataRef.current === null) return
       resetTrackCurrentTime()
       sendSocketCommand('playback', 'previous')
+    },
+    seek: (positionMs: number) => {
+      if (playerDataRef.current === null) return
+      if (!sendSocketCommand('playback', 'seek', { positionMs })) return
+      setPlayerData(p =>
+        p
+          ? {
+              ...p,
+              track: {
+                ...p.track,
+                duration: { ...p.track.duration, current: positionMs }
+              }
+            }
+          : p
+      )
     },
     setVolume: (volume: number, deviceId?: string) => {
       if (playerDataRef.current === null) return

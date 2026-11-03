@@ -1,8 +1,4 @@
 .banner {
-  position: fixed;
-  bottom: 16px;
-  left: 50%;
-  transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -10,7 +6,6 @@
   border: 1px solid #333;
   border-radius: 8px;
   padding: 10px 14px;
-  z-index: 9999;
   animation: slideUp 200ms ease;
   white-space: nowrap;
 }
@@ -18,11 +13,11 @@
 @keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateX(-50%) translateY(12px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
-    transform: translateX(-50%) translateY(0);
+    transform: translateY(0);
   }
 }
 

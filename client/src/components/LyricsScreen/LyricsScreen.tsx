@@ -14,8 +14,13 @@ interface LyricsScreenProps {
 }
 
 const LyricsScreen: React.FC<LyricsScreenProps> = ({ shown, setShown }) => {
-    const { lyricsData, lyricsLoading, lyricsCurrentLineIndex, playerData, image } =
+    const { lyricsData, lyricsLoading, lyricsCurrentLineIndex, playerData, image, actions } =
         useContext(MediaContext)
+
+    const manualScrollUntil = useRef(0)
+    const touchStart = useRef<{ x: number; y: number; time: number } | null>(null)
+    const lastTouchTap = useRef(0)
+    const canSeek = !!playerData?.supportedActions?.includes('seek')
 
     const [error, setError] = useState<string | null>(null)
     const [hasLyrics, setHasLyrics] = useState<boolean>(false)
@@ -57,6 +62,7 @@ const LyricsScreen: React.FC<LyricsScreenProps> = ({ shown, setShown }) => {
     }, [lyricsData])
 
     const scrollToActiveLine = useCallback(() => {
+        if (Date.now() < manualScrollUntil.current) return
         if (!lyricsContentRef.current || !activeLineRef.current) return
         const container = lyricsContentRef.current
         const line = activeLineRef.current
@@ -160,6 +166,31 @@ const LyricsScreen: React.FC<LyricsScreenProps> = ({ shown, setShown }) => {
         enabled: shown
     })
 
+    function scrollManually(direction: number) {
+        manualScrollUntil.current = Date.now() + 4000
+        lyricsContentRef.current?.scrollBy({ top: direction * 80 })
+    }
+
+    function onWheel(e: React.WheelEvent<HTMLDivElement>) {
+        const delta = e.deltaX || e.deltaY
+        if (!delta) return
+        e.stopPropagation()
+        scrollManually(Math.sign(delta))
+    }
+
+    function onKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+        if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+        e.preventDefault()
+        e.stopPropagation()
+        scrollManually(e.key === 'ArrowLeft' ? -1 : 1)
+    }
+
+    function seekToLine(line: { startTimeMs: string }) {
+        if (!canSeek || !syncLyric) return
+        manualScrollUntil.current = 0
+        actions.seek(parseInt(line.startTimeMs))
+    }
+
     if (!shown && !closing && !hasLyrics) return null
 
     return (
@@ -169,8 +200,12 @@ const LyricsScreen: React.FC<LyricsScreenProps> = ({ shown, setShown }) => {
             ref={containerRef}
             tabIndex={0}
             aria-hidden={!shown && !closing}
-            {...bind()}
+            onWheel={onWheel}
+            onKeyDown={onKeyDown}
         >
+            <div className={styles.swipeArea} {...bind()}>
+                <div className={styles.grabber} />
+            </div>
             <button onClick={close} className={styles.close} aria-label="Close lyrics">
                 <span className="material-icons">keyboard_arrow_down</span>
             </button>
@@ -217,13 +252,42 @@ const LyricsScreen: React.FC<LyricsScreenProps> = ({ shown, setShown }) => {
                 ) : !hasLyrics ? (
                     <div className={styles.message}>No lyrics available.</div>
                 ) : (
-                    <div className={styles.lyricsContent} ref={lyricsContentRef}>
+                    <div
+                        className={styles.lyricsContent}
+                        ref={lyricsContentRef}
+                        onTouchStart={e => {
+                            const t = e.touches[0]
+                            touchStart.current = { x: t.clientX, y: t.clientY, time: Date.now() }
+                        }}
+                        onTouchMove={e => {
+                            const start = touchStart.current
+                            const t = e.touches[0]
+                            if (
+                                start &&
+                                Math.abs(t.clientX - start.x) + Math.abs(t.clientY - start.y) > 10
+                            ) {
+                                touchStart.current = null
+                                manualScrollUntil.current = Date.now() + 4000
+                            }
+                        }}
+                    >
                         {syncLyric && <div className={styles.spacer} />}
 
-                        {(lyricsData?.lyrics?.lines ?? []).map((line: { words: string }, i: number) => {
+                        {(lyricsData?.lyrics?.lines ?? []).map((line, i) => {
                             return (
                                 <div
                                     key={i}
+                                    onTouchEnd={() => {
+                                        const start = touchStart.current
+                                        touchStart.current = null
+                                        if (!start || Date.now() - start.time > 500) return
+                                        lastTouchTap.current = Date.now()
+                                        seekToLine(line)
+                                    }}
+                                    onClick={() => {
+                                        if (Date.now() - lastTouchTap.current < 800) return
+                                        seekToLine(line)
+                                    }}
                                     className={`${styles.line} ${i === lyricsCurrentLineIndex ? styles.active : ''
                                         } ${i < lyricsCurrentLineIndex ? styles.passed : ''}`}
                                     ref={el => {

@@ -38,7 +38,7 @@ const App: React.FC = () => {
     },
     onSwipeDown: () => {
       if (lyricsScreenShown) {
-        setLyricsScreenShown(false)
+        return
       } else if (playlistsShown) {
         setPlaylistsShown(false)
       } else if (playerShown) {

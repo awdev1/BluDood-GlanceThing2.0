@@ -21,6 +21,13 @@ export function isInterlude(words: string) {
   return !words.replace(/[♩♪♫♬]/g, '').trim()
 }
 
+export function mergeInterludes<T extends { words: string }>(lines: T[]) {
+  return lines.filter(
+    (line, i) =>
+      i === 0 || !isInterlude(line.words) || !isInterlude(lines[i - 1].words)
+  )
+}
+
 export function formatTime(ms: number) {
   const seconds = Math.floor(ms / 1000)
   const minutes = Math.floor(seconds / 60)

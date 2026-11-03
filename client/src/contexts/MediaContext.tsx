@@ -18,7 +18,7 @@ import {
   SpotifyLyricsData
 } from '@/types/Playback.js'
 import { AppStateContext } from './AppStateContext.tsx'
-import { getAverageColor } from '@/lib/utils.ts'
+import { getAverageColor, mergeInterludes } from '@/lib/utils.ts'
 
 interface MediaContextProps {
   image: string | null
@@ -263,7 +263,17 @@ const currentTime = (playerData.track?.duration.current ?? 0) + 1500
 
         if (action === 'lyrics') {
           setLyricsLoading(false)
-          setLyricsData(data)
+          setLyricsData(
+            data?.lyrics?.lines
+              ? {
+                  ...data,
+                  lyrics: {
+                    ...data.lyrics,
+                    lines: mergeInterludes(data.lyrics.lines)
+                  }
+                }
+              : data
+          )
 
 
         }

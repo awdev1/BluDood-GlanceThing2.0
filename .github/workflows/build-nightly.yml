@@ -26,11 +26,14 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
       - name: Install dependencies
-        run: npm ci
+        run: bun install --frozen-lockfile
 
       - name: Build the project
-        run: npm run build:win:nightly
+        run: bun run build:win:nightly
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -50,11 +53,14 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
       - name: Install dependencies
-        run: npm ci
+        run: bun install --frozen-lockfile
 
       - name: Build the project
-        run: npm run build:mac:nightly
+        run: bun run build:mac:nightly
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -74,11 +80,14 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
       - name: Install dependencies
-        run: npm ci
+        run: bun install --frozen-lockfile
 
       - name: Build the project
-        run: npm run build:linux:nightly
+        run: bun run build:linux:nightly
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -102,11 +111,14 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+
       - name: Install dependencies
-        run: npm ci
+        run: bun install --frozen-lockfile
 
       - name: Build the project
-        run: npm run build
+        run: bun run build
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

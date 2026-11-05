@@ -22,6 +22,7 @@ import {
   SpotifyEpisodeItem
 } from '../../types/spotifyResponse.js'
 import { Cache } from '../cache.js'
+import { getStorageValue } from '../storage.js'
 import {
   initializeLyricsCache,
   cleanupLyricsCache,
@@ -574,6 +575,11 @@ class SpotifyHandler extends BasePlaybackHandler {
       now - cachedLyrics.timestamp < lyricsCache.expirationAt()
     ) {
       return cachedLyrics.data
+    }
+
+    if (getStorageValue('lyricsSource') === 'lrclib' && playbackData) {
+      const lrclibLyrics = await getFallbackLyrics(playbackData)
+      if (lrclibLyrics && !lrclibLyrics.message) return lrclibLyrics
     }
 
     try {

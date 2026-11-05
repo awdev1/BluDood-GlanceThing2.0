@@ -469,6 +469,7 @@ const ClientTab: React.FC = () => {
 
   const [autoBrightness, setAutoBrightness] = useState(false)
   const [lyricsOffset, setLyricsOffset] = useState(1.5)
+  const [lyricsSource, setLyricsSource] = useState('spotify')
   const [sleepMethod, setSleepMethod] = useState('sleep')
   const [patches, setPatches] = useState<
     | { name: string; description: string; installed: boolean }[]
@@ -535,6 +536,11 @@ const ClientTab: React.FC = () => {
       }
       setAutoBrightness(settings.current.autoBrightness ?? false)
       setSleepMethod(settings.current.sleepMethod ?? 'sleep')
+
+      setLyricsSource(
+        ((await window.api.getStorageValue('lyricsSource')) as string) ||
+          'spotify'
+      )
 
       const offset = await window.api.getStorageValue('lyricsOffset')
       if (typeof offset === 'number') setLyricsOffset(offset)
@@ -658,6 +664,18 @@ const ClientTab: React.FC = () => {
           defaultValue={settings.current.autoSwitchToLyrics ?? false}
           onChange={value =>
             window.api.setStorageValue('autoSwitchToLyrics', value)
+          }
+        />
+        <SelectSetting
+          label="Lyrics Source"
+          description="Where to get synced lyrics from. Falls back to the other source if a song isn't found."
+          defaultValue={lyricsSource}
+          options={[
+            { value: 'spotify', label: 'Spotify' },
+            { value: 'lrclib', label: 'LRCLIB' }
+          ]}
+          onChange={value =>
+            window.api.setStorageValue('lyricsSource', value)
           }
         />
         <ToggleSetting

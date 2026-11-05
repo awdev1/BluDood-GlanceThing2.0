@@ -16,6 +16,7 @@ import { setAutoBrightness, setBrightnessSmooth } from './adb.js'
 import { serverManager } from './server.js'
 import { updateTime } from './time.js'
 import { notifyClientsOfSettingChanges } from './setting.js'
+import { reloadLyrics } from './lyricsSource.js'
 
 let storage = {}
 
@@ -54,6 +55,7 @@ const storageValueHandlers: Record<string, (value: unknown) => void> = {
   lyricsOffset: notifyClientsOfSettingChanges,
   showRomanization: notifyClientsOfSettingChanges,
   showStatsWidget: notifyClientsOfSettingChanges,
+  lyricsSource: reloadLyrics,
   showTimeInStatusBar: notifyClientsOfSettingChanges,
   showWeatherInStatusBar: notifyClientsOfSettingChanges,
   showHighLowTemp: notifyClientsOfSettingChanges,

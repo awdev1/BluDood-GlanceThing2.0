@@ -11,8 +11,9 @@
   height: 0.54em;
   border-radius: 50%;
   background: currentColor;
-  opacity: 0.3;
-  transition: opacity 1s linear;
+  transition:
+    opacity 1s linear,
+    transform 1s linear;
 }
 
 .dots[data-playing='true'] {

@@ -40,6 +40,11 @@ interface AppSettings {
   lyricsOffset: number
   showRomanization: boolean
   showStatsWidget: boolean
+  holdAction1: string
+  holdAction2: string
+  holdAction3: string
+  holdAction4: string
+  holdActionDial: string
   showTimeInStatusBar: boolean
   showWeatherInStatusBar: boolean
   showHighLowTemp: boolean
@@ -85,6 +90,11 @@ const defaultSettings: AppSettings = {
   lyricsOffset: 1.5,
   showRomanization: true,
   showStatsWidget: false,
+  holdAction1: 'none',
+  holdAction2: 'none',
+  holdAction3: 'none',
+  holdAction4: 'none',
+  holdActionDial: 'none',
   showTimeInStatusBar: true,
   showWeatherInStatusBar: true,
   showHighLowTemp: true,

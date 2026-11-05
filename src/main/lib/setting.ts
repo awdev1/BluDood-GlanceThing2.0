@@ -2,6 +2,14 @@ import { AuthenticatedWebSocket } from '../types/WebSocketServer.js'
 import { serverManager } from './server.js'
 import { getStorageValue } from './storage.js'
 
+const holdActionKeys = [
+  'holdAction1',
+  'holdAction2',
+  'holdAction3',
+  'holdAction4',
+  'holdActionDial'
+]
+
 export function getClientSettings() {
   const clientKeys = [
     'timeFormat',
@@ -29,7 +37,8 @@ export function getClientSettings() {
     'showHumidityStatusBar',
     'lyricsOffset',
     'showRomanization',
-    'showStatsWidget'
+    'showStatsWidget',
+    ...holdActionKeys
   ]
   const clientSettings = {}
   clientKeys.forEach(key => {
@@ -41,6 +50,9 @@ export function getClientSettings() {
   })
   if (typeof clientSettings['lyricsOffset'] !== 'number')
     clientSettings['lyricsOffset'] = 1.5
+  holdActionKeys.forEach(key => {
+    clientSettings[key] = getStorageValue(key) || 'none'
+  })
   clientSettings['showStatsWidget'] =
     getStorageValue('showStatsWidget') === true
   return clientSettings

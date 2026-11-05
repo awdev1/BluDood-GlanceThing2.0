@@ -438,6 +438,24 @@ const GeneralTab: React.FC = () => {
   )
 }
 
+const holdActionButtons = [
+  { key: 'holdAction1', label: 'Button 1' },
+  { key: 'holdAction2', label: 'Button 2' },
+  { key: 'holdAction3', label: 'Button 3' },
+  { key: 'holdAction4', label: 'Button 4' },
+  { key: 'holdActionDial', label: 'Dial Press' }
+]
+
+const holdActionOptions = [
+  { value: 'none', label: 'Nothing' },
+  { value: 'playPause', label: 'Play / Pause' },
+  { value: 'next', label: 'Next Track' },
+  { value: 'previous', label: 'Previous Track' },
+  { value: 'lyrics', label: 'Open Lyrics' },
+  { value: 'player', label: 'Open Player' },
+  { value: 'playlists', label: 'Open Playlists' }
+]
+
 const ClientTab: React.FC = () => {
   const [loaded, setLoaded] = useState(false)
   const [hasCustomImage, setHasCustomImage] = useState(false)
@@ -470,6 +488,10 @@ const ClientTab: React.FC = () => {
   const [autoBrightness, setAutoBrightness] = useState(false)
   const [lyricsOffset, setLyricsOffset] = useState(1.5)
   const [lyricsSource, setLyricsSource] = useState('spotify')
+  const [holdActions, setHoldActions] = useState<Record<string, string>>({})
+  const [shortcuts, setShortcuts] = useState<
+    { id: string; command: string }[]
+  >([])
   const [sleepMethod, setSleepMethod] = useState('sleep')
   const [patches, setPatches] = useState<
     | { name: string; description: string; installed: boolean }[]
@@ -536,6 +558,18 @@ const ClientTab: React.FC = () => {
       }
       setAutoBrightness(settings.current.autoBrightness ?? false)
       setSleepMethod(settings.current.sleepMethod ?? 'sleep')
+
+      setHoldActions(
+        Object.fromEntries(
+          await Promise.all(
+            holdActionButtons.map(async ({ key }) => [
+              key,
+              ((await window.api.getStorageValue(key)) as string) || 'none'
+            ])
+          )
+        )
+      )
+      setShortcuts(await window.api.getShortcuts())
 
       setLyricsSource(
         ((await window.api.getStorageValue('lyricsSource')) as string) ||
@@ -757,6 +791,23 @@ const ClientTab: React.FC = () => {
           }
         />
 
+        <h3>Hold Actions</h3>
+        {holdActionButtons.map(({ key, label }) => (
+          <SelectSetting
+            key={key}
+            label={label}
+            description="Action when held for a moment"
+            defaultValue={holdActions[key] ?? 'none'}
+            options={[
+              ...holdActionOptions,
+              ...shortcuts.map(s => ({
+                value: `app:${s.id}`,
+                label: `Open ${s.command.split(/[\\/]/).pop()}`
+              }))
+            ]}
+            onChange={value => window.api.setStorageValue(key, value)}
+          />
+        ))}
         <h3>Device</h3>
         <SelectSetting
           label="Sleep Method"

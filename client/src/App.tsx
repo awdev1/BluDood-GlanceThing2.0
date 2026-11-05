@@ -14,12 +14,14 @@ import Menu from '@/components/Menu/Menu.tsx'
 import PlaylistsScreen from './components/PlaylistsScreen/PlaylistsScreen.tsx'
 import LyricsScreen from '@/components/LyricsScreen/LyricsScreen.tsx'
 import { useSwipeGesture } from '@/lib/useGestures'
+import { useHoldActions } from '@/lib/useHoldActions'
 
 import styles from './App.module.css'
 
 const App: React.FC = () => {
   const { blurred } = useContext(AppBlurContext)
-  const { ready } = useContext(SocketContext)
+  const { ready, socket } = useContext(SocketContext)
+  const appState = useContext(AppStateContext)
   const {
     showStatusBar,
     playerShown,
@@ -28,7 +30,34 @@ const App: React.FC = () => {
     setPlaylistsShown
   } = useContext(AppStateContext)
 
-  const { lyricsScreenShown, setLyricsScreenShown } = useContext(MediaContext)
+  const { lyricsScreenShown, setLyricsScreenShown, actions } =
+    useContext(MediaContext)
+
+  useHoldActions(
+    {
+      holdAction1: appState.holdAction1,
+      holdAction2: appState.holdAction2,
+      holdAction3: appState.holdAction3,
+      holdAction4: appState.holdAction4,
+      holdActionDial: appState.holdActionDial
+    },
+    action => {
+      if (action === 'playPause') actions.playPause()
+      else if (action === 'next') actions.skipForward()
+      else if (action === 'previous') actions.skipBackward()
+      else if (action === 'lyrics') setLyricsScreenShown(true)
+      else if (action === 'player') setPlayerShown(true)
+      else if (action === 'playlists') setPlaylistsShown(true)
+      else if (action.startsWith('app:'))
+        socket?.send(
+          JSON.stringify({
+            type: 'apps',
+            action: 'open',
+            data: action.slice(4)
+          })
+        )
+    }
+  )
 
   const bind = useSwipeGesture({
     onSwipeUp: () => {

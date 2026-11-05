@@ -40,9 +40,9 @@
 }
 
 .tabButton.active {
-  background-color: rgb(30, 215, 96);
+  background-color: var(--color-primary);
   color: #ffffff;
-  box-shadow: 0 2px 6px rgba(30, 215, 96, 0.3);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
 .playlistsContainer[data-shown='true'] {
@@ -51,19 +51,17 @@
   will-change: transform;
 }
 
-.close {
-  all: unset;
-  display: flex;
+.grabber {
   position: absolute;
-  top: 0;
-  right: 0;
-  padding: 15px;
-  cursor: pointer;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 44px;
+  height: 5px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.4);
   z-index: 10;
-}
-
-.close span {
-  font-size: 32px;
+  pointer-events: none;
 }
 
 .splitView {
@@ -177,17 +175,6 @@
 .playlistItem.active {
   background-color: rgba(255, 255, 255, 0.15);
   position: relative;
-}
-
-.playlistItem.active::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  background-color: rgb(30, 215, 96);
-  border-radius: 4px 0 0 4px;
 }
 
 .playlistImage {
@@ -335,8 +322,9 @@
 }
 
 .loadMoreButton:hover {
-  background-color: #1ed760;
-  box-shadow: 0 4px 12px rgba(29, 185, 84, 0.4);
+  background-color: var(--color-primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  opacity: 0.85;
   animation: none;
 }
 

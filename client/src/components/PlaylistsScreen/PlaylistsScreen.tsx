@@ -503,9 +503,7 @@ const PlaylistsScreen: React.FC<PlaylistsScreenProps> = ({
       onWheel={onWheel}
       {...bind()}
     >
-      <button onClick={() => close()} className={styles.close}>
-        <span className="material-icons">keyboard_arrow_down</span>
-      </button>
+      <div className={styles.grabber} />
 
       <div className={styles.splitView}>
         <div

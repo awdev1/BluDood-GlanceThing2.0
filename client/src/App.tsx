@@ -48,6 +48,13 @@ const App: React.FC = () => {
       else if (action === 'lyrics') setLyricsScreenShown(true)
       else if (action === 'player') setPlayerShown(true)
       else if (action === 'playlists') setPlaylistsShown(true)
+      else if (action.startsWith('discord'))
+        socket?.send(
+          JSON.stringify({
+            type: 'discord',
+            action: action.slice(7).toLowerCase()
+          })
+        )
       else if (action.startsWith('app:'))
         socket?.send(
           JSON.stringify({

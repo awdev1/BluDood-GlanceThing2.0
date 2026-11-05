@@ -16,6 +16,8 @@ import Time from './widgets/Time/Time.tsx'
 import Weather from './widgets/Weather/Weather.tsx'
 import Lyrics from './widgets/Lyrics/Lyrics.tsx'
 import Stats from './widgets/Stats/Stats.tsx'
+import Discord from './widgets/Discord/Discord.tsx'
+import { useDiscordState } from '@/lib/useDiscordState.ts'
 
 import styles from './Widgets.module.css'
 
@@ -35,6 +37,8 @@ const Widgets: React.FC = () => {
     showStatsWidget
   } = useContext(AppStateContext)
   const { playerData, lyricsData } = useContext(MediaContext)
+  const discordState = useDiscordState()
+  const discordVisible = !!discordState?.connected && discordState.inCall
   const widgetsRef = useRef<HTMLDivElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const paginationRef = useRef<HTMLDivElement>(null)
@@ -115,6 +119,14 @@ const Widgets: React.FC = () => {
       })
     }
 
+    if (discordVisible) {
+      list.push({
+        components: [
+          <Discord key="discord" visible={discordVisible} state={discordState} />
+        ]
+      })
+    }
+
     if (showStatsWidget) {
       list.push({
         components: [<Stats key="stats" visible={showStatsWidget} />]
@@ -140,7 +152,9 @@ const Widgets: React.FC = () => {
     appsVisible,
     controlsVisible,
     lyricsVisible,
-    showStatsWidget
+    showStatsWidget,
+    discordVisible,
+    discordState
   ])
 
   const lyricsIndex = useMemo(() => {

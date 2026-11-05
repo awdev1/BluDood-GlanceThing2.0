@@ -21,8 +21,8 @@
 }
 
 .box {
-  width: 600px;
-  height: 400px;
+  width: 780px;
+  height: 560px;
   padding: 15px;
   background: #111;
   border-radius: 5px;
@@ -55,14 +55,15 @@
 .content {
   display: flex;
   gap: 10px;
-  margin-top: 5px;
-  height: calc(100% - 33px);
+  margin-top: 15px;
+  height: calc(100% - 43px);
 }
 
 .tabs {
   display: flex;
   flex-direction: column;
-  width: 150px;
+  width: 170px;
+  flex-shrink: 0;
   gap: 2px;
   overflow-y: auto;
 }
@@ -222,7 +223,18 @@
 .settingsTab {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
+  padding: 0 10px 20px 5px;
+}
+
+.settingsTab h3 {
+  margin-top: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #222;
+}
+
+.settingsTab h3:first-child {
+  margin-top: 0;
 }
 
 .inputWithSubmitSetting {
@@ -355,8 +367,15 @@
 
 .buttonSetting {
   display: flex;
+  justify-content: space-between;
   transition: 200ms ease;
   align-items: center;
+}
+
+.toggleSetting .text,
+.buttonSetting .text,
+.selectSetting .text {
+  margin-right: 20px;
 }
 
 .buttonSetting[data-disabled='true'] {

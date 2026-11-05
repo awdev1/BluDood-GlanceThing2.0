@@ -15,7 +15,10 @@ import { ChannelContext } from '@/contexts/ChannelContext.js'
 
 enum Tab {
   General,
-  Client,
+  Home,
+  Lyrics,
+  CarThing,
+  Controls,
   Weather,
   Appearance,
   Startup,
@@ -67,11 +70,32 @@ const Settings: React.FC = () => {
               General
             </button>
             <button
-              onClick={() => setCurrentTab(Tab.Client)}
-              data-active={currentTab === Tab.Client}
+              onClick={() => setCurrentTab(Tab.Home)}
+              data-active={currentTab === Tab.Home}
+            >
+              <span className="material-icons">home</span>
+              Home Screen
+            </button>
+            <button
+              onClick={() => setCurrentTab(Tab.Lyrics)}
+              data-active={currentTab === Tab.Lyrics}
+            >
+              <span className="material-icons">lyrics</span>
+              Lyrics
+            </button>
+            <button
+              onClick={() => setCurrentTab(Tab.Controls)}
+              data-active={currentTab === Tab.Controls}
+            >
+              <span className="material-icons">gamepad</span>
+              Controls
+            </button>
+            <button
+              onClick={() => setCurrentTab(Tab.CarThing)}
+              data-active={currentTab === Tab.CarThing}
             >
               <span className="material-icons">devices</span>
-              Client
+              Car Thing
             </button>
             <button
               onClick={() => setCurrentTab(Tab.Weather)}
@@ -123,8 +147,14 @@ const Settings: React.FC = () => {
           <div className={styles.tab}>
             {currentTab === Tab.General ? (
               <GeneralTab />
-            ) : currentTab === Tab.Client ? (
-              <ClientTab />
+            ) : currentTab === Tab.Home ? (
+              <ClientTab section="home" />
+            ) : currentTab === Tab.Lyrics ? (
+              <ClientTab section="lyrics" />
+            ) : currentTab === Tab.Controls ? (
+              <ClientTab section="controls" />
+            ) : currentTab === Tab.CarThing ? (
+              <ClientTab section="device" />
             ) : currentTab === Tab.Weather ? (
               <WeatherTab />
             ) : currentTab === Tab.Appearance ? (
@@ -478,8 +508,8 @@ const DiscordSetting: React.FC = () => {
       <div className={styles.title}>
         <p>Discord Call Controls</p>
         <p className={styles.description}>
-          Paste your Discord application ID and client secret, then
-          approve the prompt in Discord.
+          Paste your Discord application ID and client secret, then approve
+          the prompt in Discord.
         </p>
       </div>
       <div className={styles.form}>
@@ -502,7 +532,9 @@ const DiscordSetting: React.FC = () => {
         </button>
       </div>
       {state && (
-        <p className={state.connected ? styles.success : styles.description}>
+        <p
+          className={state.connected ? styles.success : styles.description}
+        >
           {state.connected
             ? state.inCall
               ? `Connected, in call${state.channel ? `: ${state.channel}` : ''}`
@@ -535,7 +567,9 @@ const holdActionOptions = [
   { value: 'discordLeave', label: 'Discord: Leave Call' }
 ]
 
-const ClientTab: React.FC = () => {
+type ClientSection = 'home' | 'lyrics' | 'controls' | 'device'
+
+const ClientTab: React.FC<{ section: ClientSection }> = ({ section }) => {
   const [loaded, setLoaded] = useState(false)
   const [hasCustomImage, setHasCustomImage] = useState(false)
   const [screensaverStatus, setScreensaverStatus] = useState<{
@@ -567,7 +601,9 @@ const ClientTab: React.FC = () => {
   const [autoBrightness, setAutoBrightness] = useState(false)
   const [lyricsOffset, setLyricsOffset] = useState(1.5)
   const [lyricsSource, setLyricsSource] = useState('spotify')
-  const [holdActions, setHoldActions] = useState<Record<string, string>>({})
+  const [holdActions, setHoldActions] = useState<Record<string, string>>(
+    {}
+  )
   const [shortcuts, setShortcuts] = useState<
     { id: string; command: string }[]
   >([])
@@ -697,347 +733,382 @@ const ClientTab: React.FC = () => {
   return (
     loaded && (
       <div className={styles.settingsTab}>
-        <h3>Status Bar</h3>
-        <ToggleSetting
-          label="Status Bar"
-          description="Show the status bar at the top of the screen"
-          defaultValue={settings.current.showStatusBar ?? true}
-          onChange={value =>
-            window.api.setStorageValue('showStatusBar', value)
-          }
-        />
-        <ToggleSetting
-          label="Time in Status Bar"
-          description="Show the time in the status bar"
-          defaultValue={settings.current.showTimeInStatusBar ?? true}
-          onChange={value =>
-            window.api.setStorageValue('showTimeInStatusBar', value)
-          }
-        />
-        <ToggleSetting
-          label="Weather in Status Bar"
-          description="Show the weather in the status bar"
-          defaultValue={settings.current.showWeatherInStatusBar ?? true}
-          onChange={value =>
-            window.api.setStorageValue('showWeatherInStatusBar', value)
-          }
-        />
-        <h3>Widget</h3>
-        <ToggleSetting
-          label="Time Widget"
-          description="Show the time widget on the home screen"
-          defaultValue={settings.current.showTimeWidget ?? true}
-          onChange={value =>
-            window.api.setStorageValue('showTimeWidget', value)
-          }
-        />
-        <ToggleSetting
-          label="Weather Widget"
-          description="Show the weather widget on the home screen"
-          defaultValue={settings.current.showWeatherWidget ?? true}
-          onChange={value =>
-            window.api.setStorageValue('showWeatherWidget', value)
-          }
-        />
-        <ToggleSetting
-          label="Apps Widget"
-          description="Show the apps widget on the home screen"
-          defaultValue={settings.current.showAppsWidget ?? true}
-          onChange={value =>
-            window.api.setStorageValue('showAppsWidget', value)
-          }
-        />
-        <ToggleSetting
-          label="Controls Widget"
-          description="Show the controls widget on the home screen"
-          defaultValue={settings.current.showControlsWidget ?? true}
-          onChange={value =>
-            window.api.setStorageValue('showControlsWidget', value)
-          }
-        />
-        <ToggleSetting
-          label="Lyrics Widget"
-          description="Show the lyrics widget on the home screen"
-          defaultValue={settings.current.showLyricsWidget ?? true}
-          onChange={value =>
-            window.api.setStorageValue('showLyricsWidget', value)
-          }
-        />
-        <ToggleSetting
-          label="Show System Stats Widget"
-          description="Show CPU, memory and network usage from this computer"
-          defaultValue={settings.current.showStatsWidget ?? false}
-          onChange={value =>
-            window.api.setStorageValue('showStatsWidget', value)
-          }
-        />
-        <ToggleSetting
-          label="Auto Switch to Lyrics"
-          description="Automatically switch to the lyrics section when a song with lyrics is playing"
-          defaultValue={settings.current.autoSwitchToLyrics ?? false}
-          onChange={value =>
-            window.api.setStorageValue('autoSwitchToLyrics', value)
-          }
-        />
-        <SelectSetting
-          label="Lyrics Source"
-          description="Where to get synced lyrics from. Falls back to the other source if a song isn't found."
-          defaultValue={lyricsSource}
-          options={[
-            { value: 'spotify', label: 'Spotify' },
-            { value: 'lrclib', label: 'LRCLIB' }
-          ]}
-          onChange={value =>
-            window.api.setStorageValue('lyricsSource', value)
-          }
-        />
-        <ToggleSetting
-          label="Romanize Lyrics"
-          description="Show a romanized line under Cyrillic, Greek and Korean lyrics"
-          defaultValue={settings.current.showRomanization ?? true}
-          onChange={value =>
-            window.api.setStorageValue('showRomanization', value)
-          }
-        />
-        <SliderSetting
-          label="Lyrics Offset"
-          description={`Show lyrics ${Math.abs(lyricsOffset).toFixed(1)}s ${lyricsOffset < 0 ? 'later' : 'earlier'} than the song`}
-          value={lyricsOffset}
-          min={-2}
-          max={5}
-          step={0.1}
-          onChange={setLyricsOffset}
-          onRelease={value =>
-            window.api.setStorageValue('lyricsOffset', value)
-          }
-        />
-        <h3>Display</h3>
-        <ToggleSetting
-          label="Nothing Playing Note"
-          description="Show the 'Start playing something on your computer' note in the Player widget"
-          defaultValue={settings.current.showNothingPlayingNote ?? true}
-          onChange={value =>
-            window.api.setStorageValue('showNothingPlayingNote', value)
-          }
-        />
-
-        <h3>Time Settings</h3>
-        <SelectSetting
-          label="Time Format"
-          description="Displayed time format in the titlebar"
-          defaultValue={settings.current.timeFormat}
-          options={[
-            { value: 'HH:mm', label: '24-hour' },
-            { value: 'h:mm A', label: '12-hour' }
-          ]}
-          onChange={value =>
-            window.api.setStorageValue('timeFormat', value as string)
-          }
-        />
-        <SelectSetting
-          label="Date Format"
-          description="Displayed date format in the titlebar"
-          defaultValue={settings.current.dateFormat}
-          options={[
-            { value: 'ddd, D MMM', label: 'Short' },
-            { value: 'dddd, D MMMM', label: 'Long' }
-          ]}
-          onChange={value =>
-            window.api.setStorageValue('dateFormat', value as string)
-          }
-        />
-
-        <h3>Brightness</h3>
-        <ToggleSetting
-          label="Auto Brightness"
-          description="Automatically adjust the brightness"
-          defaultValue={settings.current.autoBrightness ?? false}
-          onChange={value => {
-            window.api.setStorageValue('autoBrightness', value)
-            setAutoBrightness(value)
-          }}
-        />
-        <SliderSetting
-          label="Brightness"
-          description="Adjust the brightness of the screen"
-          disabled={autoBrightness}
-          defaultValue={settings.current.brightness}
-          min={0}
-          max={1}
-          step={0.05}
-          onRelease={value =>
-            window.api.setStorageValue('brightness', value as number)
-          }
-        />
-
-        <h3>Discord</h3>
-        <DiscordSetting />
-        <h3>Hold Actions</h3>
-        {holdActionButtons.map(({ key, label }) => (
-          <SelectSetting
-            key={key}
-            label={label}
-            description="Action when held for a moment"
-            defaultValue={holdActions[key] ?? 'none'}
-            options={[
-              ...holdActionOptions,
-              ...shortcuts.map(s => ({
-                value: `app:${s.id}`,
-                label: `Open ${s.command.split(/[\\/]/).pop()}`
-              }))
-            ]}
-            onChange={value => window.api.setStorageValue(key, value)}
-          />
-        ))}
-        <h3>Device</h3>
-        <SelectSetting
-          label="Sleep Method"
-          description="Method used for putting the CarThing to sleep"
-          defaultValue={settings.current.sleepMethod}
-          options={[
-            { value: 'sleep', label: 'Black Screen' },
-            {
-              value: 'screensaver',
-              label: 'Screensaver'
-            }
-          ]}
-          onChange={value => {
-            window.api.setStorageValue('sleepMethod', value as string)
-            setSleepMethod(value as string)
-          }}
-        />
-
-        {sleepMethod === 'screensaver' && (
-          <div className={styles.screensaverSettings}>
+        {section === 'home' && (
+          <>
+            <h3>Status Bar</h3>
             <ToggleSetting
-              label="Show Time on Screensaver"
-              description="Display current time when screensaver is active"
-              defaultValue={settings.current.showTimeOnScreensaver ?? true}
+              label="Status Bar"
+              description="Show the status bar at the top of the screen"
+              defaultValue={settings.current.showStatusBar ?? true}
+              onChange={value =>
+                window.api.setStorageValue('showStatusBar', value)
+              }
+            />
+            <ToggleSetting
+              label="Time in Status Bar"
+              description="Show the time in the status bar"
+              defaultValue={settings.current.showTimeInStatusBar ?? true}
+              onChange={value =>
+                window.api.setStorageValue('showTimeInStatusBar', value)
+              }
+            />
+            <ToggleSetting
+              label="Weather in Status Bar"
+              description="Show the weather in the status bar"
+              defaultValue={
+                settings.current.showWeatherInStatusBar ?? true
+              }
+              onChange={value =>
+                window.api.setStorageValue('showWeatherInStatusBar', value)
+              }
+            />
+            <h3>Widget</h3>
+            <ToggleSetting
+              label="Time Widget"
+              description="Show the time widget on the home screen"
+              defaultValue={settings.current.showTimeWidget ?? true}
+              onChange={value =>
+                window.api.setStorageValue('showTimeWidget', value)
+              }
+            />
+            <ToggleSetting
+              label="Weather Widget"
+              description="Show the weather widget on the home screen"
+              defaultValue={settings.current.showWeatherWidget ?? true}
+              onChange={value =>
+                window.api.setStorageValue('showWeatherWidget', value)
+              }
+            />
+            <ToggleSetting
+              label="Apps Widget"
+              description="Show the apps widget on the home screen"
+              defaultValue={settings.current.showAppsWidget ?? true}
+              onChange={value =>
+                window.api.setStorageValue('showAppsWidget', value)
+              }
+            />
+            <ToggleSetting
+              label="Controls Widget"
+              description="Show the controls widget on the home screen"
+              defaultValue={settings.current.showControlsWidget ?? true}
+              onChange={value =>
+                window.api.setStorageValue('showControlsWidget', value)
+              }
+            />
+            <ToggleSetting
+              label="Lyrics Widget"
+              description="Show the lyrics widget on the home screen"
+              defaultValue={settings.current.showLyricsWidget ?? true}
+              onChange={value =>
+                window.api.setStorageValue('showLyricsWidget', value)
+              }
+            />
+            <ToggleSetting
+              label="Show System Stats Widget"
+              description="Show CPU, memory and network usage from this computer"
+              defaultValue={settings.current.showStatsWidget ?? false}
+              onChange={value =>
+                window.api.setStorageValue('showStatsWidget', value)
+              }
+            />
+          </>
+        )}
+        {section === 'lyrics' && (
+          <>
+            <h3>Lyrics</h3>
+            <ToggleSetting
+              label="Auto Switch to Lyrics"
+              description="Automatically switch to the lyrics section when a song with lyrics is playing"
+              defaultValue={settings.current.autoSwitchToLyrics ?? false}
+              onChange={value =>
+                window.api.setStorageValue('autoSwitchToLyrics', value)
+              }
+            />
+            <SelectSetting
+              label="Lyrics Source"
+              description="Where to get synced lyrics from. Falls back to the other source if a song isn't found."
+              defaultValue={lyricsSource}
+              options={[
+                { value: 'spotify', label: 'Spotify' },
+                { value: 'lrclib', label: 'LRCLIB' }
+              ]}
+              onChange={value =>
+                window.api.setStorageValue('lyricsSource', value)
+              }
+            />
+            <ToggleSetting
+              label="Romanize Lyrics"
+              description="Show a romanized line under Cyrillic, Greek and Korean lyrics"
+              defaultValue={settings.current.showRomanization ?? true}
+              onChange={value =>
+                window.api.setStorageValue('showRomanization', value)
+              }
+            />
+            <SliderSetting
+              label="Lyrics Offset"
+              description={`Show lyrics ${Math.abs(lyricsOffset).toFixed(1)}s ${lyricsOffset < 0 ? 'later' : 'earlier'} than the song`}
+              value={lyricsOffset}
+              min={-2}
+              max={5}
+              step={0.1}
+              onChange={setLyricsOffset}
+              onRelease={value =>
+                window.api.setStorageValue('lyricsOffset', value)
+              }
+            />
+          </>
+        )}
+        {section === 'home' && (
+          <>
+            <h3>Display</h3>
+            <ToggleSetting
+              label="Nothing Playing Note"
+              description="Show the 'Start playing something on your computer' note in the Player widget"
+              defaultValue={
+                settings.current.showNothingPlayingNote ?? true
+              }
+              onChange={value =>
+                window.api.setStorageValue('showNothingPlayingNote', value)
+              }
+            />
+          </>
+        )}
+        {section === 'device' && (
+          <>
+            <h3>Time Settings</h3>
+            <SelectSetting
+              label="Time Format"
+              description="Displayed time format in the titlebar"
+              defaultValue={settings.current.timeFormat}
+              options={[
+                { value: 'HH:mm', label: '24-hour' },
+                { value: 'h:mm A', label: '12-hour' }
+              ]}
+              onChange={value =>
+                window.api.setStorageValue('timeFormat', value as string)
+              }
+            />
+            <SelectSetting
+              label="Date Format"
+              description="Displayed date format in the titlebar"
+              defaultValue={settings.current.dateFormat}
+              options={[
+                { value: 'ddd, D MMM', label: 'Short' },
+                { value: 'dddd, D MMMM', label: 'Long' }
+              ]}
+              onChange={value =>
+                window.api.setStorageValue('dateFormat', value as string)
+              }
+            />
+
+            <h3>Brightness</h3>
+            <ToggleSetting
+              label="Auto Brightness"
+              description="Automatically adjust the brightness"
+              defaultValue={settings.current.autoBrightness ?? false}
               onChange={value => {
-                window.api.setStorageValue('showTimeOnScreensaver', value)
+                window.api.setStorageValue('autoBrightness', value)
+                setAutoBrightness(value)
               }}
             />
-            {settings.current.showTimeOnScreensaver && (
+            <SliderSetting
+              label="Brightness"
+              description="Adjust the brightness of the screen"
+              disabled={autoBrightness}
+              defaultValue={settings.current.brightness}
+              min={0}
+              max={1}
+              step={0.05}
+              onRelease={value =>
+                window.api.setStorageValue('brightness', value as number)
+              }
+            />
+          </>
+        )}
+        {section === 'controls' && (
+          <>
+            <h3>Discord</h3>
+            <DiscordSetting />
+            <h3>Hold Actions</h3>
+            {holdActionButtons.map(({ key, label }) => (
               <SelectSetting
-                label="Time Position"
-                description="Choose where to display the time on the screensaver"
-                defaultValue={
-                  settings.current.screensaverTimePosition ||
-                  'bottom-right'
-                }
+                key={key}
+                label={label}
+                description="Action when held for a moment"
+                defaultValue={holdActions[key] ?? 'none'}
                 options={[
-                  { value: 'bottom-right', label: 'Bottom Right' },
-                  { value: 'bottom-left', label: 'Bottom Left' },
-                  { value: 'bottom-center', label: 'Bottom Center' },
-                  { value: 'top-right', label: 'Top Right' },
-                  { value: 'top-left', label: 'Top Left' },
-                  { value: 'top-center', label: 'Top Center' },
-                  { value: 'center', label: 'Center' }
+                  ...holdActionOptions,
+                  ...shortcuts.map(s => ({
+                    value: `app:${s.id}`,
+                    label: `Open ${s.command.split(/[\\/]/).pop()}`
+                  }))
                 ]}
-                onChange={value => {
-                  window.api.setStorageValue(
-                    'screensaverTimePosition',
-                    value as string
-                  )
-                }}
+                onChange={value => window.api.setStorageValue(key, value)}
               />
-            )}
-            <div className={styles.header}>
-              <div className={styles.text}>
-                <p className={styles.label}>Custom Screensaver Image</p>
-                <p className={styles.description}>
-                  Upload a custom image to use as your screensaver
-                  background
-                </p>
-              </div>
-              <div className={styles.actions}>
-                <button
-                  onClick={async () => {
-                    setScreensaverStatus(null)
+            ))}
+          </>
+        )}
+        {section === 'device' && (
+          <>
+            <h3>Device</h3>
+            <SelectSetting
+              label="Sleep Method"
+              description="Method used for putting the CarThing to sleep"
+              defaultValue={settings.current.sleepMethod}
+              options={[
+                { value: 'sleep', label: 'Black Screen' },
+                {
+                  value: 'screensaver',
+                  label: 'Screensaver'
+                }
+              ]}
+              onChange={value => {
+                window.api.setStorageValue('sleepMethod', value as string)
+                setSleepMethod(value as string)
+              }}
+            />
 
-                    const result =
-                      await window.api.uploadScreensaverImage()
-
-                    if (result && result.success) {
-                      setHasCustomImage(true)
-                      setScreensaverStatus({
-                        message: 'Image uploaded successfully!',
-                        status: 'success'
-                      })
-                    } else {
-                      setScreensaverStatus({
-                        message:
-                          result.message || 'Failed to upload image',
-                        status: 'error'
-                      })
-                    }
+            {sleepMethod === 'screensaver' && (
+              <div className={styles.screensaverSettings}>
+                <ToggleSetting
+                  label="Show Time on Screensaver"
+                  description="Display current time when screensaver is active"
+                  defaultValue={
+                    settings.current.showTimeOnScreensaver ?? true
+                  }
+                  onChange={value => {
+                    window.api.setStorageValue(
+                      'showTimeOnScreensaver',
+                      value
+                    )
                   }}
-                >
-                  <span className="material-icons">upload</span>
-                </button>
-                {hasCustomImage && (
-                  <button
-                    data-type="danger"
-                    onClick={async () => {
-                      setScreensaverStatus(null)
-
-                      const success =
-                        await window.api.removeScreensaverImage()
-
-                      if (success) {
-                        setHasCustomImage(false)
-                        setScreensaverStatus({
-                          message: 'Image removed successfully!',
-                          status: 'success'
-                        })
-                      } else {
-                        setScreensaverStatus({
-                          message: 'Failed to remove image',
-                          status: 'error'
-                        })
-                      }
+                />
+                {settings.current.showTimeOnScreensaver && (
+                  <SelectSetting
+                    label="Time Position"
+                    description="Choose where to display the time on the screensaver"
+                    defaultValue={
+                      settings.current.screensaverTimePosition ||
+                      'bottom-right'
+                    }
+                    options={[
+                      { value: 'bottom-right', label: 'Bottom Right' },
+                      { value: 'bottom-left', label: 'Bottom Left' },
+                      { value: 'bottom-center', label: 'Bottom Center' },
+                      { value: 'top-right', label: 'Top Right' },
+                      { value: 'top-left', label: 'Top Left' },
+                      { value: 'top-center', label: 'Top Center' },
+                      { value: 'center', label: 'Center' }
+                    ]}
+                    onChange={value => {
+                      window.api.setStorageValue(
+                        'screensaverTimePosition',
+                        value as string
+                      )
                     }}
+                  />
+                )}
+                <div className={styles.header}>
+                  <div className={styles.text}>
+                    <p className={styles.label}>
+                      Custom Screensaver Image
+                    </p>
+                    <p className={styles.description}>
+                      Upload a custom image to use as your screensaver
+                      background
+                    </p>
+                  </div>
+                  <div className={styles.actions}>
+                    <button
+                      onClick={async () => {
+                        setScreensaverStatus(null)
+
+                        const result =
+                          await window.api.uploadScreensaverImage()
+
+                        if (result && result.success) {
+                          setHasCustomImage(true)
+                          setScreensaverStatus({
+                            message: 'Image uploaded successfully!',
+                            status: 'success'
+                          })
+                        } else {
+                          setScreensaverStatus({
+                            message:
+                              result.message || 'Failed to upload image',
+                            status: 'error'
+                          })
+                        }
+                      }}
+                    >
+                      <span className="material-icons">upload</span>
+                    </button>
+                    {hasCustomImage && (
+                      <button
+                        data-type="danger"
+                        onClick={async () => {
+                          setScreensaverStatus(null)
+
+                          const success =
+                            await window.api.removeScreensaverImage()
+
+                          if (success) {
+                            setHasCustomImage(false)
+                            setScreensaverStatus({
+                              message: 'Image removed successfully!',
+                              status: 'success'
+                            })
+                          } else {
+                            setScreensaverStatus({
+                              message: 'Failed to remove image',
+                              status: 'error'
+                            })
+                          }
+                        }}
+                      >
+                        <span className="material-icons">delete</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {screensaverStatus && (
+                  <div
+                    className={styles.status}
+                    data-type={screensaverStatus.status}
                   >
-                    <span className="material-icons">delete</span>
-                  </button>
+                    <span className="material-icons">
+                      {screensaverStatus.status === 'error'
+                        ? 'error_outline'
+                        : 'check_circle'}
+                    </span>
+                    {screensaverStatus.message}
+                  </div>
                 )}
               </div>
-            </div>
-            {screensaverStatus && (
-              <div
-                className={styles.status}
-                data-type={screensaverStatus.status}
-              >
-                <span className="material-icons">
-                  {screensaverStatus.status === 'error'
-                    ? 'error_outline'
-                    : 'check_circle'}
-                </span>
-                {screensaverStatus.message}
-              </div>
             )}
-          </div>
-        )}
-        {patches !== null && isDev ? (
-          <div className={styles.patches}>
-            <h2>Patches</h2>
+            {patches !== null && isDev ? (
+              <div className={styles.patches}>
+                <h2>Patches</h2>
 
-            {patches ? (
-              patches.map(patch => (
-                <Patch
-                  key={patch.name}
-                  {...patch}
-                  onApply={() => applyPatch(patch.name)}
-                />
-              ))
-            ) : (
-              <div className={styles.status}>
-                <span className="material-icons">info_outline</span>
-                Please connect your CarThing to see and install patches!
+                {patches ? (
+                  patches.map(patch => (
+                    <Patch
+                      key={patch.name}
+                      {...patch}
+                      onApply={() => applyPatch(patch.name)}
+                    />
+                  ))
+                ) : (
+                  <div className={styles.status}>
+                    <span className="material-icons">info_outline</span>
+                    Please connect your CarThing to see and install
+                    patches!
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        ) : null}
+            ) : null}
+          </>
+        )}
       </div>
     )
   )
@@ -1541,7 +1612,9 @@ const AdvancedTab: React.FC = () => {
           {portNotice && (
             <div className={styles.status} data-type={portNotice.type}>
               <span className="material-icons">
-                {portNotice.type === 'error' ? 'error_outline' : 'check_circle'}
+                {portNotice.type === 'error'
+                  ? 'error_outline'
+                  : 'check_circle'}
               </span>
               {portNotice.message}
             </div>
@@ -1715,7 +1788,7 @@ const AboutTab: React.FC = () => {
           <p>Developer of DeskThing, heavily inspired this project</p>
         </div>
       </div>
-          <div className={styles.credit}>
+      <div className={styles.credit}>
         <img
           src="https://avatars.githubusercontent.com/u/165525907?v=4"
           alt=""

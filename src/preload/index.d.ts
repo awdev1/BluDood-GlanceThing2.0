@@ -1,5 +1,13 @@
 import '@electron-toolkit/preload'
 
+interface DiscordState {
+  connected: boolean
+  inCall: boolean
+  channel: string | null
+  mute: boolean
+  deaf: boolean
+}
+
 interface Shortcut {
   id: string
   command: string
@@ -74,6 +82,11 @@ declare global {
       isPortOpen: (port: number) => Promise<boolean>
       restoreCarThing: () => Promise<void>
       getPlaybackAuthExpired: () => Promise<boolean>
+      setDiscordCredentials: (
+        clientId: string,
+        clientSecret: string
+      ) => Promise<DiscordState>
+      getDiscordState: () => Promise<DiscordState & { clientId: string }>
     }
   }
 }

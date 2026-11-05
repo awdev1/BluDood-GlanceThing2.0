@@ -46,7 +46,9 @@ enum IPCHandler {
   FindOpenPort = 'findOpenPort',
   IsPortOpen = 'isPortOpen',
   RestoreCarThing = 'restoreCarThing',
-  GetPlaybackAuthExpired = 'getPlaybackAuthExpired'
+  GetPlaybackAuthExpired = 'getPlaybackAuthExpired',
+  SetDiscordCredentials = 'setDiscordCredentials',
+  GetDiscordState = 'getDiscordState'
 }
 
 // Custom APIs for renderer
@@ -128,7 +130,14 @@ const api = {
     ipcRenderer.invoke(IPCHandler.IsPortOpen, port),
   restoreCarThing: () => ipcRenderer.invoke(IPCHandler.RestoreCarThing),
   getPlaybackAuthExpired: () =>
-    ipcRenderer.invoke(IPCHandler.GetPlaybackAuthExpired)
+    ipcRenderer.invoke(IPCHandler.GetPlaybackAuthExpired),
+  setDiscordCredentials: (clientId: string, clientSecret: string) =>
+    ipcRenderer.invoke(
+      IPCHandler.SetDiscordCredentials,
+      clientId,
+      clientSecret
+    ),
+  getDiscordState: () => ipcRenderer.invoke(IPCHandler.GetDiscordState)
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

@@ -438,6 +438,82 @@ const GeneralTab: React.FC = () => {
   )
 }
 
+const DiscordSetting: React.FC = () => {
+  const [clientId, setClientId] = useState('')
+  const [clientSecret, setClientSecret] = useState('')
+  const [state, setState] = useState<{
+    connected: boolean
+    inCall: boolean
+    channel: string | null
+  } | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    window.api.getDiscordState().then(s => {
+      setClientId(s.clientId)
+      setState(s)
+    })
+
+    const interval = setInterval(
+      () => window.api.getDiscordState().then(setState),
+      3000
+    )
+    return () => clearInterval(interval)
+  }, [])
+
+  async function save() {
+    setSaving(true)
+    setState(
+      await window.api.setDiscordCredentials(
+        clientId.trim(),
+        clientSecret.trim()
+      )
+    )
+    setClientSecret('')
+    setSaving(false)
+  }
+
+  return (
+    <div className={styles.inputWithSubmitSetting}>
+      <div className={styles.title}>
+        <p>Discord Call Controls</p>
+        <p className={styles.description}>
+          Paste your Discord application ID and client secret, then
+          approve the prompt in Discord.
+        </p>
+      </div>
+      <div className={styles.form}>
+        <input
+          type="text"
+          placeholder="Application ID"
+          value={clientId}
+          onChange={e => setClientId(e.target.value)}
+        />
+      </div>
+      <div className={styles.form}>
+        <input
+          type="password"
+          placeholder="Client secret"
+          value={clientSecret}
+          onChange={e => setClientSecret(e.target.value)}
+        />
+        <button disabled={saving} onClick={save}>
+          {saving ? 'Connecting...' : 'Save'}
+        </button>
+      </div>
+      {state && (
+        <p className={state.connected ? styles.success : styles.description}>
+          {state.connected
+            ? state.inCall
+              ? `Connected, in call${state.channel ? `: ${state.channel}` : ''}`
+              : 'Connected, not in a call'
+            : 'Not connected'}
+        </p>
+      )}
+    </div>
+  )
+}
+
 const holdActionButtons = [
   { key: 'holdAction1', label: 'Button 1' },
   { key: 'holdAction2', label: 'Button 2' },
@@ -453,7 +529,10 @@ const holdActionOptions = [
   { value: 'previous', label: 'Previous Track' },
   { value: 'lyrics', label: 'Open Lyrics' },
   { value: 'player', label: 'Open Player' },
-  { value: 'playlists', label: 'Open Playlists' }
+  { value: 'playlists', label: 'Open Playlists' },
+  { value: 'discordMute', label: 'Discord: Mute' },
+  { value: 'discordDeafen', label: 'Discord: Deafen' },
+  { value: 'discordLeave', label: 'Discord: Leave Call' }
 ]
 
 const ClientTab: React.FC = () => {
@@ -791,6 +870,8 @@ const ClientTab: React.FC = () => {
           }
         />
 
+        <h3>Discord</h3>
+        <DiscordSetting />
         <h3>Hold Actions</h3>
         {holdActionButtons.map(({ key, label }) => (
           <SelectSetting
@@ -1648,7 +1729,7 @@ const AboutTab: React.FC = () => {
             awdev
           </a>
 
-          <p>Developer of DeskThing, heavily inspired this project</p>
+          <p>Developer of this GlanceThing fork</p>
         </div>
       </div>
     </div>

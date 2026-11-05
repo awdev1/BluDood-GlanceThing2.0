@@ -1,6 +1,7 @@
 import { Handler } from '../../types/WebSocketHandler.js'
 
 import * as apps from './apps.js'
+import * as discord from './discord.js'
 import * as lock from './lock.js'
 import * as ping from './ping.js'
 import * as playback from './playback.js'
@@ -17,6 +18,7 @@ import * as weather from './weather.js'
 
 export const handlers: Handler[] = [
   apps,
+  discord,
   lock,
   ping,
   playback,

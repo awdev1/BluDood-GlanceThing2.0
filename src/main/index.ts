@@ -41,6 +41,7 @@ import {
   setLogLevel
 } from './lib/utils.js'
 import { serverManager } from './lib/server.js'
+import { getDiscordState, startDiscord } from './lib/discord.js'
 import {
   findCarThing,
   rebootCarThing,
@@ -232,6 +233,8 @@ app.on('ready', async () => {
   await setupIpcHandlers()
   await setupTray()
 
+  startDiscord()
+
   serverManager.on('status', up => {
     mainWindow?.webContents.send('serverStatus', up)
   })
@@ -308,7 +311,9 @@ enum IPCHandler {
   FindOpenPort = 'findOpenPort',
   IsPortOpen = 'isPortOpen',
   RestoreCarThing = 'restoreCarThing',
-  GetPlaybackAuthExpired = 'getPlaybackAuthExpired'
+  GetPlaybackAuthExpired = 'getPlaybackAuthExpired',
+  SetDiscordCredentials = 'setDiscordCredentials',
+  GetDiscordState = 'getDiscordState'
 }
 
 async function setupIpcHandlers() {
@@ -564,6 +569,23 @@ async function setupIpcHandlers() {
   })
 
   ipcMain.handle('getUpdateAvailable', () => pendingUpdate)
+
+  ipcMain.handle(
+    IPCHandler.SetDiscordCredentials,
+    async (_event, clientId: string, clientSecret: string) => {
+      setStorageValue('discordClientId', clientId || null)
+      setStorageValue('discordClientSecret', clientSecret || null, true)
+      await startDiscord()
+      return getDiscordState()
+    }
+  )
+
+  ipcMain.handle(IPCHandler.GetDiscordState, () => {
+    return {
+      ...getDiscordState(),
+      clientId: getStorageValue('discordClientId') ?? ''
+    }
+  })
 
   ipcMain.handle(IPCHandler.GetPlaybackAuthExpired, () => {
     return playbackManager.authExpired

@@ -1,4 +1,7 @@
-import React from 'react'
+import React, { useContext } from 'react'
+
+import { AppStateContext } from '@/contexts/AppStateContext.tsx'
+import { needsRomanization, romanize } from '@/lib/romanize.ts'
 
 import styles from './LyricText.module.css'
 
@@ -20,11 +23,17 @@ function split(words: string) {
 }
 
 const LyricText: React.FC<{ words: string }> = ({ words }) => {
+  const { showRomanization } = useContext(AppStateContext)
   const { main, background } = split(words)
+  const romanized =
+    showRomanization && needsRomanization(words) ? romanize(words) : null
 
   return (
     <>
       {main}
+      {romanized && (
+        <span className={styles.romanized}>{romanized}</span>
+      )}
       {background && (
         <span
           className={styles.background}

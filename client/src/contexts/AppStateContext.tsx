@@ -38,6 +38,7 @@ interface AppSettings {
   showTempUnit: boolean
   autoSwitchToLyrics: boolean
   lyricsOffset: number
+  showRomanization: boolean
   showTimeInStatusBar: boolean
   showWeatherInStatusBar: boolean
   showHighLowTemp: boolean
@@ -81,6 +82,7 @@ const defaultSettings: AppSettings = {
   showTempUnit: true,
   autoSwitchToLyrics: false,
   lyricsOffset: 1.5,
+  showRomanization: true,
   showTimeInStatusBar: true,
   showWeatherInStatusBar: true,
   showHighLowTemp: true,

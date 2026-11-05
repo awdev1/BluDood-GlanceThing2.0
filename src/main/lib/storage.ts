@@ -52,6 +52,7 @@ const storageValueHandlers: Record<string, (value: unknown) => void> = {
   showTempUnit: notifyClientsOfSettingChanges,
   autoSwitchToLyrics: notifyClientsOfSettingChanges,
   lyricsOffset: notifyClientsOfSettingChanges,
+  showRomanization: notifyClientsOfSettingChanges,
   showTimeInStatusBar: notifyClientsOfSettingChanges,
   showWeatherInStatusBar: notifyClientsOfSettingChanges,
   showHighLowTemp: notifyClientsOfSettingChanges,

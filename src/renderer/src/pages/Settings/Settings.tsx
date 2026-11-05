@@ -461,6 +461,7 @@ const ClientTab: React.FC = () => {
     showTimeOnScreensaver?: boolean
     screensaverTimePosition?: string
     autoSwitchToLyrics?: boolean
+    showRomanization?: boolean
     showTimeInStatusBar?: boolean
     showWeatherInStatusBar?: boolean
   }>({})
@@ -519,6 +520,9 @@ const ClientTab: React.FC = () => {
         autoSwitchToLyrics:
           ((await window.api.getStorageValue('autoSwitchToLyrics')) ??
             false) === true,
+        showRomanization:
+          ((await window.api.getStorageValue('showRomanization')) ??
+            true) === true,
         showTimeInStatusBar:
           ((await window.api.getStorageValue('showTimeInStatusBar')) ??
             true) === true,
@@ -643,6 +647,14 @@ const ClientTab: React.FC = () => {
           defaultValue={settings.current.autoSwitchToLyrics ?? false}
           onChange={value =>
             window.api.setStorageValue('autoSwitchToLyrics', value)
+          }
+        />
+        <ToggleSetting
+          label="Romanize Lyrics"
+          description="Show a romanized line under Cyrillic, Greek and Korean lyrics"
+          defaultValue={settings.current.showRomanization ?? true}
+          onChange={value =>
+            window.api.setStorageValue('showRomanization', value)
           }
         />
         <SliderSetting

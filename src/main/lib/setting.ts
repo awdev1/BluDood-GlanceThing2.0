@@ -27,7 +27,8 @@ export function getClientSettings() {
     'showWeatherDescriptionStatusBar',
     'showWeatherIconStatusBar',
     'showHumidityStatusBar',
-    'lyricsOffset'
+    'lyricsOffset',
+    'showRomanization'
   ]
   const clientSettings = {}
   clientKeys.forEach(key => {

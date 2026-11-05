@@ -8,3 +8,11 @@
 .background[data-alone='true'] {
   margin-top: 0;
 }
+
+.romanized {
+  display: block;
+  margin-top: 0.15em;
+  font-size: 0.6em;
+  font-weight: 600;
+  opacity: 0.7;
+}

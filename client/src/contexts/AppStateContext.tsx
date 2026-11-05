@@ -37,6 +37,7 @@ interface AppSettings {
   screensaverTimePosition: string
   showTempUnit: boolean
   autoSwitchToLyrics: boolean
+  autoSwitchToDiscord: boolean
   lyricsOffset: number
   showRomanization: boolean
   showStatsWidget: boolean
@@ -87,6 +88,7 @@ const defaultSettings: AppSettings = {
   screensaverTimePosition: 'bottom-right',
   showTempUnit: true,
   autoSwitchToLyrics: false,
+  autoSwitchToDiscord: true,
   lyricsOffset: 1.5,
   showRomanization: true,
   showStatsWidget: false,

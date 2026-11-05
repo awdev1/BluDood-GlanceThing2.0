@@ -25,6 +25,7 @@ export function getClientSettings() {
     'screensaverTimePosition',
     'showTempUnit',
     'autoSwitchToLyrics',
+    'autoSwitchToDiscord',
     'showTimeInStatusBar',
     'showWeatherInStatusBar',
     'showHighLowTemp',

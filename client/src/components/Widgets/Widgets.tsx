@@ -34,6 +34,7 @@ const Widgets: React.FC = () => {
     showLyricsWidget,
     showStatusBar,
     autoSwitchToLyrics,
+    autoSwitchToDiscord,
     showStatsWidget
   } = useContext(AppStateContext)
   const { playerData, lyricsData } = useContext(MediaContext)
@@ -156,6 +157,18 @@ const Widgets: React.FC = () => {
     discordVisible,
     discordState
   ])
+
+  const discordIndex =
+    (timeVisible || weatherVisible ? 1 : 0) +
+    (appsVisible || controlsVisible ? 1 : 0)
+  const wasInCall = useRef(false)
+
+  useEffect(() => {
+    if (discordVisible && !wasInCall.current && autoSwitchToDiscord) {
+      setActiveSection(discordIndex + 1)
+    }
+    wasInCall.current = discordVisible
+  }, [discordVisible, autoSwitchToDiscord, discordIndex])
 
   const lyricsIndex = useMemo(() => {
     if (!lyricsVisible) return -1

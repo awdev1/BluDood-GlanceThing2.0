@@ -593,6 +593,7 @@ const ClientTab: React.FC<{ section: ClientSection }> = ({ section }) => {
     showTimeOnScreensaver?: boolean
     screensaverTimePosition?: string
     autoSwitchToLyrics?: boolean
+    autoSwitchToDiscord?: boolean
     showRomanization?: boolean
     showTimeInStatusBar?: boolean
     showWeatherInStatusBar?: boolean
@@ -661,6 +662,9 @@ const ClientTab: React.FC<{ section: ClientSection }> = ({ section }) => {
         autoSwitchToLyrics:
           ((await window.api.getStorageValue('autoSwitchToLyrics')) ??
             false) === true,
+        autoSwitchToDiscord:
+          ((await window.api.getStorageValue('autoSwitchToDiscord')) ??
+            true) === true,
         showRomanization:
           ((await window.api.getStorageValue('showRomanization')) ??
             true) === true,
@@ -929,6 +933,14 @@ const ClientTab: React.FC<{ section: ClientSection }> = ({ section }) => {
           <>
             <h3>Discord</h3>
             <DiscordSetting />
+            <ToggleSetting
+              label="Switch to Discord When Joining a Call"
+              description="Show the Discord page on the Car Thing when you join a voice call"
+              defaultValue={settings.current.autoSwitchToDiscord ?? true}
+              onChange={value =>
+                window.api.setStorageValue('autoSwitchToDiscord', value)
+              }
+            />
             <h3>Hold Actions</h3>
             {holdActionButtons.map(({ key, label }) => (
               <SelectSetting

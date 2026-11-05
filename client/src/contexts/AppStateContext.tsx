@@ -37,6 +37,7 @@ interface AppSettings {
   screensaverTimePosition: string
   showTempUnit: boolean
   autoSwitchToLyrics: boolean
+  lyricsOffset: number
   showTimeInStatusBar: boolean
   showWeatherInStatusBar: boolean
   showHighLowTemp: boolean
@@ -79,6 +80,7 @@ const defaultSettings: AppSettings = {
   screensaverTimePosition: 'bottom-right',
   showTempUnit: true,
   autoSwitchToLyrics: false,
+  lyricsOffset: 1.5,
   showTimeInStatusBar: true,
   showWeatherInStatusBar: true,
   showHighLowTemp: true,

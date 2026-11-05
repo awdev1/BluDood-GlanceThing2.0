@@ -26,7 +26,8 @@ export function getClientSettings() {
     'showHighLowTempStatusBar',
     'showWeatherDescriptionStatusBar',
     'showWeatherIconStatusBar',
-    'showHumidityStatusBar'
+    'showHumidityStatusBar',
+    'lyricsOffset'
   ]
   const clientSettings = {}
   clientKeys.forEach(key => {
@@ -36,6 +37,8 @@ export function getClientSettings() {
     }
     clientSettings[key] = value
   })
+  if (typeof clientSettings['lyricsOffset'] !== 'number')
+    clientSettings['lyricsOffset'] = 1.5
   return clientSettings
 }
 

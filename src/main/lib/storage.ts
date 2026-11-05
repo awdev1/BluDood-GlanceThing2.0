@@ -51,6 +51,7 @@ const storageValueHandlers: Record<string, (value: unknown) => void> = {
   screensaverTimePosition: notifyClientsOfSettingChanges,
   showTempUnit: notifyClientsOfSettingChanges,
   autoSwitchToLyrics: notifyClientsOfSettingChanges,
+  lyricsOffset: notifyClientsOfSettingChanges,
   showTimeInStatusBar: notifyClientsOfSettingChanges,
   showWeatherInStatusBar: notifyClientsOfSettingChanges,
   showHighLowTemp: notifyClientsOfSettingChanges,

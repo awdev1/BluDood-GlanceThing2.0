@@ -49,6 +49,7 @@ interface MediaContextProps {
   setLikedSongsLoading?: React.Dispatch<React.SetStateAction<boolean>>
 
   lyricsScreenShown: boolean
+  lyricsOffsetMs: number
   setLyricsScreenShown: React.Dispatch<React.SetStateAction<boolean>>
 
   actions: {
@@ -100,6 +101,7 @@ const MediaContext = createContext<MediaContextProps>({
   setLikedSongsOffset: () => { },
   setLikedSongsLoading: () => { },
   lyricsScreenShown: false,
+  lyricsOffsetMs: 1500,
   setLyricsScreenShown: () => { },
   actions: {
     playPause: () => { },
@@ -128,7 +130,9 @@ interface MediaContextProviderProps {
 
 const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
   const { ready, socket } = useContext(SocketContext)
-  const { showLyricsWidget, getCurrentServerTime } = useContext(AppStateContext)
+  const { showLyricsWidget, getCurrentServerTime, lyricsOffset } =
+    useContext(AppStateContext)
+  const lyricsOffsetMs = (lyricsOffset ?? 1.5) * 1000
   const socketRef = useRef<WebSocket | null>(null)
 
   const [playerData, setPlayerData] = useState<PlaybackData | null>(null)
@@ -193,7 +197,7 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
       return
 
 
-const currentTime = (playerData.track?.duration.current ?? 0) + 1500
+const currentTime = (playerData.track?.duration.current ?? 0) + lyricsOffsetMs
 
     let foundIndex = -1
     const lines = lyricsData.lyrics.lines
@@ -230,7 +234,7 @@ const currentTime = (playerData.track?.duration.current ?? 0) + 1500
     if (foundIndex !== lyricsCurrentLineIndex) {
       setlyricsCurrentLineIndex(foundIndex)
     }
-  }, [playerData?.track.duration.current, lyricsData])
+  }, [playerData?.track.duration.current, lyricsData, lyricsOffsetMs])
 
   const hasTrackChanged = useCallback((newData: PlaybackData) => {
     const currentTrack = playerDataRef.current?.track
@@ -681,6 +685,7 @@ const currentTime = (playerData.track?.duration.current ?? 0) + 1500
         setLikedSongsOffset,
         setLikedSongsLoading,
         lyricsScreenShown,
+        lyricsOffsetMs,
         setLyricsScreenShown
       }}
     >

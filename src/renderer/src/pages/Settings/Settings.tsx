@@ -466,6 +466,7 @@ const ClientTab: React.FC = () => {
   }>({})
 
   const [autoBrightness, setAutoBrightness] = useState(false)
+  const [lyricsOffset, setLyricsOffset] = useState(1.5)
   const [sleepMethod, setSleepMethod] = useState('sleep')
   const [patches, setPatches] = useState<
     | { name: string; description: string; installed: boolean }[]
@@ -527,6 +528,9 @@ const ClientTab: React.FC = () => {
       }
       setAutoBrightness(settings.current.autoBrightness ?? false)
       setSleepMethod(settings.current.sleepMethod ?? 'sleep')
+
+      const offset = await window.api.getStorageValue('lyricsOffset')
+      if (typeof offset === 'number') setLyricsOffset(offset)
 
       const hasImage = await window.api.hasCustomScreensaverImage()
       setHasCustomImage(hasImage)
@@ -639,6 +643,18 @@ const ClientTab: React.FC = () => {
           defaultValue={settings.current.autoSwitchToLyrics ?? false}
           onChange={value =>
             window.api.setStorageValue('autoSwitchToLyrics', value)
+          }
+        />
+        <SliderSetting
+          label="Lyrics Offset"
+          description={`Show lyrics ${Math.abs(lyricsOffset).toFixed(1)}s ${lyricsOffset < 0 ? 'later' : 'earlier'} than the song`}
+          value={lyricsOffset}
+          min={-2}
+          max={5}
+          step={0.1}
+          onChange={setLyricsOffset}
+          onRelease={value =>
+            window.api.setStorageValue('lyricsOffset', value)
           }
         />
         <h3>Display</h3>

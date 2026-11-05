@@ -36,7 +36,8 @@ export function getInterludeRowState(
 export function getInterludeTiming(
   lines: { words: string; startTimeMs: string }[],
   index: number,
-  currentMs: number | undefined
+  currentMs: number | undefined,
+  offsetMs: number
 ) {
   const line = lines[index]
   if (!line || !isInterlude(line.words))
@@ -45,7 +46,7 @@ export function getInterludeTiming(
   const start = parseInt(line.startTimeMs)
   const next = lines[index + 1]
   const end = next ? parseInt(next.startTimeMs) : start + 3000
-  const now = (currentMs ?? start) + 1500
+  const now = (currentMs ?? start) + offsetMs
 
   return {
     progress: Math.min(

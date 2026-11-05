@@ -108,6 +108,8 @@ export async function refreshAccessToken(
 
 
 
+const PREFETCH_COUNT = 2
+
 const defaultSupportedActions: Action[] = [
   'play',
   'pause',
@@ -345,12 +347,58 @@ class SpotifyHandler extends BasePlaybackHandler {
     if (!this.authExpired) this.startPolling()
   }
 
+  private lastTrackId: string | null = null
+  private prefetching = false
+
+  private async prefetchQueueLyrics() {
+    if (this.prefetching) return
+    this.prefetching = true
+    try {
+      const res = await this.instance!.get('/me/player/queue')
+      if (res.status !== 200 || !Array.isArray(res.data?.queue)) return
+
+      const upcoming = (res.data.queue as SpotifyTrackItem[])
+        .filter(item => item?.id && item.artists)
+        .slice(0, PREFETCH_COUNT)
+
+      for (const item of upcoming) {
+        const cached = lyricsCache.get(item.id)
+        if (
+          cached &&
+          Date.now() - cached.timestamp < lyricsCache.expirationAt()
+        )
+          continue
+
+        await this.fetchTrackLyrics(item, {
+          isPlaying: false,
+          track: {
+            id: item.id,
+            name: item.name,
+            artists: item.artists.map(a => a.name),
+            album: item.album.name,
+            duration: { current: 0, total: item.duration_ms }
+          }
+        } as PlaybackData)
+      }
+    } catch (error) {
+      log(`Lyrics prefetch failed: ${error}`, 'Spotify', LogLevel.WARN)
+    } finally {
+      this.prefetching = false
+    }
+  }
+
   startPolling() {
     const poll = async () => {
       try {
         const current = await this.getCurrent()
         const currentState = current ? JSON.stringify(current) : null
-        
+
+        const trackId = current?.item?.id ?? null
+        if (trackId && trackId !== this.lastTrackId) {
+          this.lastTrackId = trackId
+          this.prefetchQueueLyrics()
+        }
+
         if (currentState !== this.lastPlaybackState) {
           this.lastPlaybackState = currentState
           const playbackData = current ? filterData(current) : null
@@ -507,6 +555,16 @@ class SpotifyHandler extends BasePlaybackHandler {
     }
 
     const item = current.item as SpotifyTrackItem
+    return this.fetchTrackLyrics(
+      item,
+      filterData({ ...current, item }) ?? null
+    )
+  }
+
+  private async fetchTrackLyrics(
+    item: SpotifyTrackItem,
+    playbackData: PlaybackData | null
+  ): Promise<LyricsResponse | null> {
     const trackId = item.id
     const now = Date.now()
 
@@ -579,10 +637,6 @@ class SpotifyHandler extends BasePlaybackHandler {
       )
 
       try {
-        const playbackData = filterData({
-          ...current,
-          item: current.item as SpotifyTrackItem
-        })
         if (playbackData) {
           const fallbackResult = await getFallbackLyrics(playbackData)
           if (fallbackResult && !fallbackResult.message) {

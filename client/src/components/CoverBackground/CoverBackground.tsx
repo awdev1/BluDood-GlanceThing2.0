@@ -8,7 +8,7 @@ interface CoverBackgroundProps {
   className?: string
 }
 
-const SIZE = 64
+const SIZE = 16
 
 const layers = [
   [
@@ -51,13 +51,16 @@ const CoverBackground: React.FC<CoverBackgroundProps> = ({
         if (!ctx) return
 
         ctx.clearRect(0, 0, SIZE, SIZE)
-        ctx.filter = 'blur(6px) saturate(1.6)'
+        ctx.filter = 'blur(1.5px) saturate(1.6)'
 
         layers[layer].forEach(({ x, y, scale, angle }) => {
           const w = SIZE * scale
           ctx.save()
           ctx.translate(SIZE * x, SIZE * y)
           ctx.rotate((angle * Math.PI) / 180)
+          ctx.beginPath()
+          ctx.arc(0, 0, w / 2, 0, Math.PI * 2)
+          ctx.clip()
           ctx.drawImage(img, -w / 2, -w / 2, w, w)
           ctx.restore()
         })

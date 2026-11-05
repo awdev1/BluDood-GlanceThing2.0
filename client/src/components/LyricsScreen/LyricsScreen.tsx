@@ -21,7 +21,7 @@ interface LyricsScreenProps {
 }
 
 const LyricsScreen: React.FC<LyricsScreenProps> = ({ shown, setShown }) => {
-    const { lyricsData, lyricsLoading, lyricsCurrentLineIndex, playerData, image, actions, lyricsOffsetMs } =
+    const { lyricsData, lyricsLoading, lyricsCurrentLineIndex, playerData, image, actions, lyricsOffsetMs, getPositionMs } =
         useContext(MediaContext)
 
     const manualScrollUntil = useRef(0)
@@ -37,7 +37,7 @@ const LyricsScreen: React.FC<LyricsScreenProps> = ({ shown, setShown }) => {
     const interlude = getInterludeTiming(
         lyricsData?.lyrics?.lines ?? [],
         lyricsCurrentLineIndex,
-        playerData?.track?.duration.current,
+        getPositionMs(),
         lyricsOffsetMs
     )
 

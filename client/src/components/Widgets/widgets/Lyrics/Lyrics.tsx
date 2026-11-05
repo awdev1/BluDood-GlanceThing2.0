@@ -37,7 +37,8 @@ const Lyrics: React.FC<LyricsProps> = ({ visible, sectionActive }) => {
     lyricsScreenShown,
     playerData,
     image,
-    lyricsOffsetMs
+    lyricsOffsetMs,
+    getPositionMs
   } = useContext(MediaContext)
 
   const [error, setError] = useState<string | null>(null)
@@ -164,7 +165,7 @@ const Lyrics: React.FC<LyricsProps> = ({ visible, sectionActive }) => {
     const interlude = getInterludeTiming(
       lyricsData.lyrics.lines,
       lyricsCurrentLineIndex,
-      playerData?.track?.duration.current,
+      getPositionMs(),
       lyricsOffsetMs
     )
 

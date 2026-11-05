@@ -50,6 +50,7 @@ interface MediaContextProps {
 
   lyricsScreenShown: boolean
   lyricsOffsetMs: number
+  getPositionMs: () => number
   setLyricsScreenShown: React.Dispatch<React.SetStateAction<boolean>>
 
   actions: {
@@ -102,6 +103,7 @@ const MediaContext = createContext<MediaContextProps>({
   setLikedSongsLoading: () => { },
   lyricsScreenShown: false,
   lyricsOffsetMs: 1500,
+  getPositionMs: () => 0,
   setLyricsScreenShown: () => { },
   actions: {
     playPause: () => { },
@@ -188,53 +190,50 @@ const MediaContextProvider = ({ children }: MediaContextProviderProps) => {
     }
   }, [image, lyricsData])
 
+  const positionAnchor = useRef({ position: 0, at: 0, playing: false })
+
+  const reportedPosition = playerData?.track?.duration.current ?? 0
+  const reportedPlaying = !!playerData?.isPlaying
+
   useEffect(() => {
-    if (
-      !playerData?.isPlaying ||
-      !lyricsData?.lyrics?.lines ||
-      lyricsData.lyrics.lines.length === 0
-    )
-      return
-
-
-const currentTime = (playerData.track?.duration.current ?? 0) + lyricsOffsetMs
-
-    let foundIndex = -1
-    const lines = lyricsData.lyrics.lines
-
-    if (currentTime < parseInt(lines[0].startTimeMs)) {
-      if (lyricsCurrentLineIndex !== -1) {
-        setlyricsCurrentLineIndex(-1)
-      }
-      return
+    positionAnchor.current = {
+      position: reportedPosition,
+      at: performance.now(),
+      playing: reportedPlaying
     }
+  }, [reportedPosition, reportedPlaying])
 
-    if (currentTime > parseInt(lines[lines.length - 1].startTimeMs)) {
-      if (lyricsCurrentLineIndex !== lines.length - 1) {
-        setlyricsCurrentLineIndex(lines.length - 1)
+  const getPositionMs = useCallback(() => {
+    const { position, at, playing } = positionAnchor.current
+    return playing ? position + (performance.now() - at) : position
+  }, [])
+
+  const lyricsIndexRef = useRef(lyricsCurrentLineIndex)
+  lyricsIndexRef.current = lyricsCurrentLineIndex
+
+  useEffect(() => {
+    const lines = lyricsData?.lyrics?.lines
+    if (!lines || lines.length === 0) return
+
+    const update = () => {
+      const currentTime = getPositionMs() + lyricsOffsetMs
+      let index = -1
+
+      for (let i = 0; i < lines.length; i++) {
+        if (parseInt(lines[i].startTimeMs) <= currentTime) index = i
+        else break
       }
-      return
-    }
 
-    for (let i = 0; i < lines.length; i++) {
-      const startMs = parseInt(lines[i].startTimeMs)
-      const endMs = parseInt(lines[i].endTimeMs) || startMs
-
-      if (currentTime >= startMs && currentTime <= endMs) {
-        foundIndex = i
-        break
-      }
-
-      if (currentTime < startMs && i > 0) {
-        foundIndex = i - 1
-        break
+      if (index !== lyricsIndexRef.current) {
+        lyricsIndexRef.current = index
+        setlyricsCurrentLineIndex(index)
       }
     }
 
-    if (foundIndex !== lyricsCurrentLineIndex) {
-      setlyricsCurrentLineIndex(foundIndex)
-    }
-  }, [playerData?.track.duration.current, lyricsData, lyricsOffsetMs])
+    update()
+    const interval = window.setInterval(update, 100)
+    return () => window.clearInterval(interval)
+  }, [lyricsData, lyricsOffsetMs, getPositionMs])
 
   const hasTrackChanged = useCallback((newData: PlaybackData) => {
     const currentTrack = playerDataRef.current?.track
@@ -686,6 +685,7 @@ const currentTime = (playerData.track?.duration.current ?? 0) + lyricsOffsetMs
         setLikedSongsLoading,
         lyricsScreenShown,
         lyricsOffsetMs,
+        getPositionMs,
         setLyricsScreenShown
       }}
     >

@@ -21,20 +21,42 @@ export function isInterlude(words: string) {
   return !words.replace(/[♩♪♫♬]/g, '').trim()
 }
 
-export function getInterludeProgress(
+const INTERLUDE_EXIT_MS = 1000
+
+export function getInterludeRowState(
+  index: number,
+  currentIndex: number,
+  ending: boolean
+) {
+  if (index > currentIndex) return 'upcoming'
+  if (index < currentIndex || ending) return 'finished'
+  return 'shown'
+}
+
+export function getInterludeTiming(
   lines: { words: string; startTimeMs: string }[],
   index: number,
   currentMs: number | undefined
 ) {
   const line = lines[index]
-  if (!line || !isInterlude(line.words)) return 0
+  if (!line || !isInterlude(line.words))
+    return { progress: 0, ending: false }
 
   const start = parseInt(line.startTimeMs)
   const next = lines[index + 1]
   const end = next ? parseInt(next.startTimeMs) : start + 3000
   const now = (currentMs ?? start) + 1500
 
-  return Math.min(Math.max((now - start) / Math.max(end - start, 1), 0), 1)
+  return {
+    progress: Math.min(
+      Math.max(
+        (now - start) / Math.max(end - start - INTERLUDE_EXIT_MS, 1),
+        0
+      ),
+      1
+    ),
+    ending: end - now <= INTERLUDE_EXIT_MS
+  }
 }
 
 const INTRO_THRESHOLD = 2000

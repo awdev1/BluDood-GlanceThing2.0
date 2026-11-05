@@ -6,6 +6,7 @@ interface InterludeDotsProps {
   active: boolean
   playing: boolean
   progress: number
+  finished?: boolean
   className?: string
 }
 
@@ -13,14 +14,20 @@ const InterludeDots: React.FC<InterludeDotsProps> = ({
   active,
   playing,
   progress,
+  finished,
   className
 }) => (
   <div
     className={`${styles.dots} ${className ?? ''}`}
     data-playing={active && playing}
+    data-finished={!!finished}
   >
     {[0, 1, 2].map(d => {
-      const fill = active ? Math.min(Math.max(progress * 3 - d, 0), 1) : 0
+      const fill = finished
+        ? 1
+        : active
+          ? Math.min(Math.max(progress * 3 - d, 0), 1)
+          : 0
 
       return (
         <span

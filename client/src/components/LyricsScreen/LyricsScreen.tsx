@@ -1,12 +1,19 @@
 import React, { useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { MediaContext } from '@/contexts/MediaContext.tsx'
 import styles from './LyricsScreen.module.css'
-import { formatTime, getInterludeProgress, isInterlude } from '@/lib/utils'
+import {
+    formatTime,
+    getInterludeRowState,
+    getInterludeTiming,
+    isInterlude
+} from '@/lib/utils'
 import Marquee from '@/components/Marquee/Marquee'
 import CoverBackground from '@/components/CoverBackground/CoverBackground'
 import SwipeHandle from '@/components/SwipeHandle/SwipeHandle'
 import InterludeDots from '@/components/InterludeDots/InterludeDots'
 import LyricText from '@/components/LyricText/LyricText'
+
+const LINE_PADDING = 11
 
 interface LyricsScreenProps {
     shown: boolean
@@ -27,7 +34,7 @@ const LyricsScreen: React.FC<LyricsScreenProps> = ({ shown, setShown }) => {
     const [syncLyric, setSyncLyric] = useState<boolean>(false)
     const [closing, setClosing] = useState<boolean>(false)
 
-    const interludeProgress = getInterludeProgress(
+    const interlude = getInterludeTiming(
         lyricsData?.lyrics?.lines ?? [],
         lyricsCurrentLineIndex,
         playerData?.track?.duration.current
@@ -67,8 +74,15 @@ const LyricsScreen: React.FC<LyricsScreenProps> = ({ shown, setShown }) => {
         const container = lyricsContentRef.current
         const line = activeLineRef.current
         const containerHeight = container.clientHeight
-        const lineHeight = line.clientHeight
-        const lineTop = line.offsetTop
+        const lineHeight = line.classList.contains(styles.interlude)
+            ? line.scrollHeight + LINE_PADDING * 2
+            : line.clientHeight
+        const collapsing = Array.from(
+            container.querySelectorAll<HTMLElement>(`.${styles.finished}`)
+        )
+            .filter(row => row.offsetTop < line.offsetTop)
+            .reduce((total, row) => total + row.offsetHeight, 0)
+        const lineTop = line.offsetTop - collapsing
         const scrollTop = Math.max(0, lineTop - (containerHeight - lineHeight) / 2)
         container.scrollTo({ top: scrollTop, behavior: 'smooth' })
     }, [])
@@ -275,7 +289,7 @@ const LyricsScreen: React.FC<LyricsScreenProps> = ({ shown, setShown }) => {
                                         seekToLine(line)
                                     }}
                                     className={`${styles.line} ${i === lyricsCurrentLineIndex ? styles.active : ''
-                                        } ${i < lyricsCurrentLineIndex ? styles.passed : ''}`}
+                                        } ${i < lyricsCurrentLineIndex ? styles.passed : ''} ${isInterlude(line.words) ? `${styles.interlude} ${styles[getInterludeRowState(i, lyricsCurrentLineIndex, interlude.ending)]}` : ''}`}
                                     ref={el => {
                                         if (i === lyricsCurrentLineIndex) activeLineRef.current = el
                                     }}
@@ -284,7 +298,8 @@ const LyricsScreen: React.FC<LyricsScreenProps> = ({ shown, setShown }) => {
                                         <InterludeDots
                                             active={i === lyricsCurrentLineIndex}
                                             playing={!!playerData?.isPlaying}
-                                            progress={interludeProgress}
+                                            progress={interlude.progress}
+                                            finished={getInterludeRowState(i, lyricsCurrentLineIndex, interlude.ending) === 'finished'}
                                             className={styles.dots}
                                         />
                                     ) : (

@@ -159,3 +159,45 @@
 .dots {
   color: #fff;
 }
+
+.interlude {
+  animation: expand 400ms ease;
+}
+
+.upcoming {
+  overflow: hidden;
+  visibility: hidden;
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  animation: none;
+}
+
+.finished {
+  overflow: hidden;
+  animation: collapse 400ms ease 300ms forwards;
+}
+
+@keyframes expand {
+  from {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  to {
+    max-height: calc(1.25em + 11px * 2);
+  }
+}
+
+@keyframes collapse {
+  from {
+    max-height: calc(1.25em + 11px * 2);
+  }
+
+  to {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+}

@@ -30,3 +30,24 @@
     transform: scale(1.15);
   }
 }
+
+.dots[data-finished='true'] {
+  animation: bounceOut 500ms ease-in forwards;
+}
+
+@keyframes bounceOut {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  30% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(0);
+    opacity: 0;
+  }
+}

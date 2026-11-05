@@ -8,12 +8,18 @@ import React, {
 } from 'react'
 import { MediaContext } from '@/contexts/MediaContext.tsx'
 import BaseWidget from '../BaseWidget/BaseWidget'
-import { getInterludeProgress, isInterlude } from '@/lib/utils'
+import {
+  getInterludeRowState,
+  getInterludeTiming,
+  isInterlude
+} from '@/lib/utils'
 import InterludeDots from '@/components/InterludeDots/InterludeDots'
 import LyricText from '@/components/LyricText/LyricText'
 import CoverBackground from '@/components/CoverBackground/CoverBackground'
 
 import styles from './Lyrics.module.css'
+
+const LINE_PADDING = 8
 
 interface LyricsProps {
   visible: boolean
@@ -61,7 +67,16 @@ const Lyrics: React.FC<LyricsProps> = ({ visible, sectionActive }) => {
     if (!visible || !activeLineRef.current || !lyricsContentRef.current) return
     const container = lyricsContentRef.current
     const line = activeLineRef.current
-    const top = line.offsetTop - container.clientHeight / 2 + line.clientHeight / 2
+    const collapsing = Array.from(
+      container.querySelectorAll<HTMLElement>(`.${styles.finished}`)
+    )
+      .filter(row => row.offsetTop < line.offsetTop)
+      .reduce((total, row) => total + row.offsetHeight, 0)
+    const lineHeight = line.classList.contains(styles.interlude)
+      ? line.scrollHeight + LINE_PADDING * 2
+      : line.clientHeight
+    const top =
+      line.offsetTop - collapsing - container.clientHeight / 2 + lineHeight / 2
     container.scrollTo({ top, behavior: 'smooth' })
   }, [visible])
 
@@ -145,6 +160,12 @@ const Lyrics: React.FC<LyricsProps> = ({ visible, sectionActive }) => {
       return <div className={styles.emptyLyrics}></div>
     }
 
+    const interlude = getInterludeTiming(
+      lyricsData.lyrics.lines,
+      lyricsCurrentLineIndex,
+      playerData?.track?.duration.current
+    )
+
     return (
       <div
         className={styles.lyricsContent}
@@ -162,7 +183,19 @@ const Lyrics: React.FC<LyricsProps> = ({ visible, sectionActive }) => {
             key={index}
             className={`${styles.line} ${
               index === lyricsCurrentLineIndex ? styles.activeLine : ''
-            } ${index < lyricsCurrentLineIndex ? styles.passedLine : ''}`}
+            } ${index < lyricsCurrentLineIndex ? styles.passedLine : ''} ${
+              isInterlude(line.words)
+                ? `${styles.interlude} ${
+                    styles[
+                      getInterludeRowState(
+                        index,
+                        lyricsCurrentLineIndex,
+                        interlude.ending
+                      )
+                    ]
+                  }`
+                : ''
+            }`}
             ref={index === lyricsCurrentLineIndex ? activeLineRef : null}
           >
             <div className={styles.lineContent}>
@@ -170,12 +203,15 @@ const Lyrics: React.FC<LyricsProps> = ({ visible, sectionActive }) => {
                 <InterludeDots
                   className={styles.dots}
                   active={index === lyricsCurrentLineIndex}
+                  finished={
+                    getInterludeRowState(
+                      index,
+                      lyricsCurrentLineIndex,
+                      interlude.ending
+                    ) === 'finished'
+                  }
                   playing={!!playerData?.isPlaying}
-                  progress={getInterludeProgress(
-                    lyricsData.lyrics.lines,
-                    lyricsCurrentLineIndex,
-                    playerData?.track?.duration.current
-                  )}
+                  progress={interlude.progress}
                 />
               ) : (
                 <LyricText words={line.words} />

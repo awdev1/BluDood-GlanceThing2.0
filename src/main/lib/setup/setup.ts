@@ -6,8 +6,9 @@ import {
 import * as time from './time.js'
 import * as playback from './playback.js'
 import * as weather from './weather.js'
+import * as stats from './stats.js'
 
-const setupHandlers: SetupHandler[] = [time, playback, weather]
+const setupHandlers: SetupHandler[] = [time, playback, weather, stats]
 
 export async function runServerSetup() {
   const cleanupFunctions: CleanupFunction[] = []

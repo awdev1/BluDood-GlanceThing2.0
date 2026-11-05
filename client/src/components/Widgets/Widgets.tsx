@@ -15,6 +15,7 @@ import Apps from './widgets/Apps/Apps.tsx'
 import Time from './widgets/Time/Time.tsx'
 import Weather from './widgets/Weather/Weather.tsx'
 import Lyrics from './widgets/Lyrics/Lyrics.tsx'
+import Stats from './widgets/Stats/Stats.tsx'
 
 import styles from './Widgets.module.css'
 
@@ -30,7 +31,8 @@ const Widgets: React.FC = () => {
     showControlsWidget,
     showLyricsWidget,
     showStatusBar,
-    autoSwitchToLyrics
+    autoSwitchToLyrics,
+    showStatsWidget
   } = useContext(AppStateContext)
   const { playerData, lyricsData } = useContext(MediaContext)
   const widgetsRef = useRef<HTMLDivElement>(null)
@@ -113,6 +115,12 @@ const Widgets: React.FC = () => {
       })
     }
 
+    if (showStatsWidget) {
+      list.push({
+        components: [<Stats key="stats" visible={showStatsWidget} />]
+      })
+    }
+
     if (lyricsVisible) {
       list.push({
         components: [
@@ -131,7 +139,8 @@ const Widgets: React.FC = () => {
     weatherVisible,
     appsVisible,
     controlsVisible,
-    lyricsVisible
+    lyricsVisible,
+    showStatsWidget
   ])
 
   const lyricsIndex = useMemo(() => {

@@ -457,6 +457,7 @@ const ClientTab: React.FC = () => {
     showAppsWidget?: boolean
     showControlsWidget?: boolean
     showLyricsWidget?: boolean
+    showStatsWidget?: boolean
     showNothingPlayingNote?: boolean
     showTimeOnScreensaver?: boolean
     screensaverTimePosition?: string
@@ -505,6 +506,8 @@ const ClientTab: React.FC = () => {
         showControlsWidget:
           ((await window.api.getStorageValue('showControlsWidget')) ??
             true) === true,
+        showStatsWidget:
+          (await window.api.getStorageValue('showStatsWidget')) === true,
         showLyricsWidget:
           ((await window.api.getStorageValue('showLyricsWidget')) ??
             true) === true,
@@ -639,6 +642,14 @@ const ClientTab: React.FC = () => {
           defaultValue={settings.current.showLyricsWidget ?? true}
           onChange={value =>
             window.api.setStorageValue('showLyricsWidget', value)
+          }
+        />
+        <ToggleSetting
+          label="Show System Stats Widget"
+          description="Show CPU, memory and network usage from this computer"
+          defaultValue={settings.current.showStatsWidget ?? false}
+          onChange={value =>
+            window.api.setStorageValue('showStatsWidget', value)
           }
         />
         <ToggleSetting

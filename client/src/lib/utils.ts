@@ -38,13 +38,55 @@ export function getInterludeProgress(
 }
 
 const INTRO_THRESHOLD = 2000
+const GAP_THRESHOLD = 6000
+const MS_PER_WORD = 400
+const MIN_LINE_MS = 1500
+const MAX_LINE_MS = 6000
+
+function estimateLineEnd(
+  line: { words: string; startTimeMs: string; endTimeMs: string },
+  nextStart: number
+) {
+  const start = parseInt(line.startTimeMs)
+  const end = parseInt(line.endTimeMs)
+  if (end > start && end < nextStart) return end
+
+  const words = line.words.trim().split(/\s+/).length
+  const sung = Math.min(
+    Math.max(words * MS_PER_WORD, MIN_LINE_MS),
+    MAX_LINE_MS
+  )
+  return start + sung
+}
 
 export function normalizeLyricLines<
   T extends { words: string; startTimeMs: string; endTimeMs: string }
 >(lines: T[], synced: boolean) {
-  const merged = lines.filter(
+  const withGaps: T[] = []
+
+  lines.forEach((line, i) => {
+    withGaps.push(line)
+
+    const next = lines[i + 1]
+    if (!synced || !next || isInterlude(line.words)) return
+
+    const nextStart = parseInt(next.startTimeMs)
+    const end = estimateLineEnd(line, nextStart)
+    if (nextStart - end < GAP_THRESHOLD) return
+
+    withGaps.push({
+      ...line,
+      startTimeMs: String(end),
+      endTimeMs: next.startTimeMs,
+      words: ''
+    })
+  })
+
+  const merged = withGaps.filter(
     (line, i) =>
-      i === 0 || !isInterlude(line.words) || !isInterlude(lines[i - 1].words)
+      i === 0 ||
+      !isInterlude(line.words) ||
+      !isInterlude(withGaps[i - 1].words)
   )
 
   const first = merged[0]
